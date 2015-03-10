@@ -1,37 +1,32 @@
-from ophyd.controls import PVPositioner
+from ophyd.controls import EpicsSignal, EpicsMotor
 
-# Undulator
+# SR current
+# CNT012 src  SRcur  SR:C03-BI{DCCT:1}I:Real-I
+SRcur = EpicsSignal('SR:C03-BI{DCCT:1}I:Real-I', rw=False, name='SRcur')
 
-epu1_gap = PVPositioner('XF:23ID-ID{EPU:1-Ax:Gap}Pos-SP',
-                        readback='XF:23ID-ID{EPU:1-Ax:Gap}Pos-I',
-                        stop='SR:C23-ID:G1A{EPU:1-Ax:Gap}-Mtr.STOP',
-                        stop_val=1,
-                        put_complete=True,
-                        name='epu1_gap')
+# Undulator: this is an example
 
-epu2_gap = PVPositioner('XF:23ID-ID{EPU:2-Ax:Gap}Pos-SP',
-                        readback='XF:23ID-ID{EPU:2-Ax:Gap}Pos-I',
-                        stop='SR:C23-ID:G1A{EPU:2-Ax:Gap}-Mtr.STOP',
-                        stop_val=1,
-                        put_complete=True,
-                        name='epu2_gap')
+#epu1_gap = PVPositioner('XF:23ID-ID{EPU:1-Ax:Gap}Pos-SP',
+#                        readback='XF:23ID-ID{EPU:1-Ax:Gap}Pos-I',
+#                        stop='SR:C23-ID:G1A{EPU:1-Ax:Gap}-Mtr.STOP',
+#                        stop_val=1,
+#                        put_complete=True,
+#                        name='epu1_gap')
 
-epu1_phase = PVPositioner('XF:23ID-ID{EPU:1-Ax:Phase}Pos-SP',
-                          readback='XF:23ID-ID{EPU:1-Ax:Phase}Pos-I',
-                          stop='SR:C23-ID:G1A{EPU:1-Ax:Phase}-Mtr.STOP',
-                          stop_val=1,
-                          put_complete=True,
-                          name='epu1_phase')
+############# Front End Slits (Primary Slits) ############
+# MOT001 fst  FSlitTop  FE:C10A-OP{Slt:1-Ax:T}Mtr.VAL
+fst = EpicsMotor('FE:C10A-OP{Slt:1-Ax:T}Mtr', name='fst')
 
-epu2_phase = PVPositioner('XF:23ID-ID{EPU:2-Ax:Phase}Pos-SP',
-                          readback='XF:23ID-ID{EPU:2-Ax:Phase}Pos-I',
-                          stop='SR:C23-ID:G1A{EPU:2-Ax:Phase}-Mtr.STOP',
-                          stop_val=1,
-                          put_complete=True,
-                          name='epu2_phase')
+# MOT002 fsb  FSlitBot  FE:C10A-OP{Slt:2-Ax:B}Mtr.VAL
+fsb = EpicsMotor('FE:C10A-OP{Slt:2-Ax:B}Mtr', name='fsb')
 
-# Front End Slits (Primary Slits)
+# MOT003 fso  FSlitOut  FE:C10A-OP{Slt:1-Ax:O}Mtr.VAL
+fso = EpicsMotor('FE:C10A-OP{Slt:1-Ax:O}Mtr', name='fso')
 
+# MOT004 fsi  FSlitIn  FE:C10A-OP{Slt:2-Ax:I}Mtr.VAL
+fsi = EpicsMotor('FE:C10A-OP{Slt:2-Ax:I}Mtr', name='fsi')
+
+''' Example of how to configure the Frontend slit composite motions
 fe_xc = PVPositioner('FE:C23A-OP{Slt:12-Ax:X}center',
                      readback='FE:C23A-OP{Slt:12-Ax:X}t2.D',
                      stop='FE:C23A-CT{MC:1}allstop',
@@ -57,3 +52,4 @@ fe_yg = PVPositioner('FE:C23A-OP{Slt:12-Ax:Y}size',
                      stop_val=1,
                      put_complete=True,
                      name='fe_yg')
+'''
