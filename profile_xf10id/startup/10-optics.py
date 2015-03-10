@@ -55,7 +55,7 @@ ssab = EpicsMotor('XF:10IDB-OP{SSA:1-Ax:B}Mtr', name='ssab')
 # MOT021 s2t  Slit2Top  XF:10IDC-OP{Slt:4-Ax:T}Mtr.VAL
 s2t = EpicsMotor('XF:10IDC-OP{Slt:4-Ax:T}Mtr', name='s2t') 
 # MOT022 s2b  Slit2Bot  XF:10IDC-OP{Slt:4-Ax:B}Mtr.VAL
-s2b = EpicsMotor('XF:10IDC-OP{Slt:4-Ax:B}Mtr', name's2b') 
+s2b = EpicsMotor('XF:10IDC-OP{Slt:4-Ax:B}Mtr', name='s2b') 
 # MOT023 s2o  Slit2Out  XF:10IDC-OP{Slt:4-Ax:O}Mtr.VAL
 s2o = EpicsMotor('XF:10IDC-OP{Slt:4-Ax:O}Mtr', name='s2o') 
 # MOT024 s2i  Slit2In  XF:10IDC-OP{Slt:4-Ax:I}Mtr.VAL
