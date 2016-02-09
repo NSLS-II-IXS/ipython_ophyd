@@ -16,12 +16,6 @@ class Analyzer(Device):
     wchi = Cpt(EpicsMotor, '-ES{Ez4:1-Ax:4}Mtr')
 
 
-class Spectrometer(Device):
-    sty = Cpt(EpicsMotor, '-Ax:Y}Mtr')
-    stx = Cpt(EpicsMotor, '-Ax:X}Mtr')
-    stz = Cpt(EpicsMotor, '-Ax:Z}Mtr')
-
-
 class AnalyzerDXtals(Device):
     d1the = Cpt(EpicsMotor, '2-Ax:1}Mtr')
     d1phi = Cpt(EpicsMotor, '2-Ax:2}Mtr')
