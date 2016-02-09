@@ -73,12 +73,6 @@ class Pinhole(Device):
     dy = Cpt(EpicsMotor, '-Ax:DY}Mtr')
 
 
-class Analyzer(Device):
-    uy = Cpt(EpicsMotor, 'XF:10IDD-OP{Analy:1-Ax:UY}Mtr')
-    dy = Cpt(EpicsMotor, 'XF:10IDD-OP{Analy:1-Ax:DY}Mtr')
-    ay = Cpt(EpicsMotor, 'XF:10IDD-OP{Analy:1-Ax:A}Mtr')
-    by = Cpt(EpicsMotor, 'XF:10IDD-OP{Analy:1-Ax:B}Mtr')
-
 
 dcm = DCM('XF:10IDA-OP{Mono:DCM', name='dcm')
 vfm = VFM('XF:10IDD-OP{VFM:1', name='vfm')
@@ -97,5 +91,3 @@ bpm2_diag = EpicsMotor('XF:10IDC-BI{BPM:2-Ax:Y}Mtr', name='bpm2_diag')
 ssa = SSA('XF:10IDB-OP{SSA:1', name='ssa')
 k3 = Table('XF:10IDC-OP{Tbl:1', name='k3')
 ph = Pinhole('XF:10IDD-OP{Pinh:1', name='ph')
-
-analyzer = Analyzer('XF:10IDD-OP{Analy:1', name='analyzer')
