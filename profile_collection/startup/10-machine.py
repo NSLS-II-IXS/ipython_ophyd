@@ -1,4 +1,5 @@
-from ophyd import (EpicsSignal, EpicsSignalRO, EpicsMotor, PVPositioner)
+from ophyd import (Device, EpicsSignal, EpicsSignalRO,
+                   EpicsMotor, PVPositioner, Component as Cpt)
 
 
 # SR current
