@@ -25,7 +25,7 @@ class Undulator(PVPositioner):
     setpoint = Cpt(EpicsSignal, '}Man:SP:Gap')
     # Note: there are actually 2 readbacks for gap position, Y1 & Y2.
     # This should be fixed at the EPICS level to provide an avg gap
-    readback = Cpt(EpicsSignalRO, '}Y1:RBV')
+    readback = Cpt(EpicsSignalRO, '}Y1:Rbv')
     actuate = Cpt(EpicsSignal, '}ManG:Go_.PROC')
     actuate_value = 1
     done = Cpt(EpicsSignalRO, '-Mtr:Gap}.DMOV')
