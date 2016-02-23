@@ -1,6 +1,15 @@
 from ophyd import (Device, Component as Cpt, EpicsMotor)
 
 
+# defined here, also used in 10-optics.py
+# why do none of the 'slits' constructs feature gap, center motions?
+class Blades(Device):
+    top = Cpt(EpicsMotor, '-Ax:T}Mtr')
+    bottom = Cpt(EpicsMotor, '-Ax:B}Mtr')
+    outboard = Cpt(EpicsMotor, '-Ax:O}Mtr')
+    inboard = Cpt(EpicsMotor, '-Ax:I}Mtr')
+
+
 class DCM(Device):
     y =  Cpt(EpicsMotor, '-Ax:Y}Mtr')
     th = Cpt(EpicsMotor, '-Ax:P}Mtr')

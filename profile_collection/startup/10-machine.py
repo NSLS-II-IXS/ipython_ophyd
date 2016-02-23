@@ -12,13 +12,11 @@ class CRL(Device):
     th =Cpt(EpicsMotor, '-Ax:P}Mtr')
 
 
-# defined here, also used in 10-optics.py
-# why do none of the 'slits' constructs feature gap, center motions?
-class Blades(Device):
-    top = Cpt(EpicsMotor, '-Ax:T}Mtr')
-    bottom = Cpt(EpicsMotor, '-Ax:B}Mtr')
-    outboard = Cpt(EpicsMotor, '-Ax:O}Mtr')
-    inboard = Cpt(EpicsMotor, '-Ax:I}Mtr')
+class FESlits(Device):
+    top = Cpt(EpicsMotor, '1-Ax:T}Mtr')
+    bottom = Cpt(EpicsMotor, '2-Ax:B}Mtr')
+    outboard = Cpt(EpicsMotor, '1-Ax:O}Mtr')
+    inboard = Cpt(EpicsMotor, '2-Ax:I}Mtr')
 
 
 # TODO: revisit the IVU as a PseudoPositioner
@@ -36,5 +34,5 @@ class Undulator(PVPositioner):
 
 
 ivu22 = Undulator('SR:C10-ID:G1{IVU22:1')
-fes = Blades('FE:C10A-OP{Slt:1', name='fes')
+fes = FESlits('FE:C10A-OP{Slt:', name='fes')
 crl = CRL('FE:C10A-OP{CRL:1', name='crl')
