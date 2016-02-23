@@ -33,6 +33,6 @@ class Undulator(PVPositioner):
     stop_value = 1
 
 
-ivu22 = Undulator('SR:C10-ID:G1{IVU22:1')
+ivu22 = Undulator('SR:C10-ID:G1{IVU22:1', name='ivu22')
 fes = FESlits('FE:C10A-OP{Slt:', name='fes')
 crl = CRL('FE:C10A-OP{CRL:1', name='crl')
