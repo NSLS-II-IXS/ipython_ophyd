@@ -89,8 +89,8 @@ hfm = HFM('XF:10IDD-OP{HFM:1', name='hfm')
 hrm2 = HRM2('XF:10IDB-OP{Mono:HRM2', name='hrm2')
 
 s1 = Blades('XF:10IDA-OP{Slt:1', name='s1')
-s2 = Blades('XF:10IDA-OP{Slt:4', name='s2')
-s3 = Blades('XF:10IDA-OP{Slt:5', name='s3')
+s2 = Blades('XF:10IDC-OP{Slt:4', name='s2')
+s3 = Blades('XF:10IDD-OP{Slt:5', name='s3')
 
 bpm1 = XYMotor('XF:10IDA-OP{BPM:1', name='bpm1')
 bpm1_diag = EpicsMotor('XF:10IDA-BI{BPM:1-Ax:YFoil}Mtr', name='bpm1_diag')
