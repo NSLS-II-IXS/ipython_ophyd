@@ -55,7 +55,7 @@ class SampleStage(Device):
 
 analyzer = Analyzer('XF:10IDD', name='analyzer')
 analyzer_xtals = AnalyzerDXtals('XF:10IDD-ES{Ez4:', name='analyzer_xtals')
-analyzer_slits = AnalyzerSlits('XF:10IDD-ES{Ez:', name='analyzer_slits')
+analyzer_slits = AnalyzerSlits('XF:10IDD-ES{Ez4:', name='analyzer_slits')
 mcm_slits = MCMSlits('XF:10IDD-OP{Ez:', name='mcm_slits')
 sample_stage = SampleStage('XF:10IDD-OP', name='sample_stage')
 
