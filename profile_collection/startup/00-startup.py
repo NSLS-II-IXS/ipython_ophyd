@@ -6,7 +6,10 @@ from bluesky import qt_kicker
 
 qt_kicker.install_qt_kicker()
 RE=gs.RE
-RE.md['beamline_id'] = '10id'
+RE.md['beamline_id'] = 'IXS'
+RE.md['owner'] = 'xf10id'
+RE.md['group'] = 'ixs'
+
 
 import matplotlib.pyplot as plt
 plt.ion()
@@ -35,3 +38,4 @@ cb = logbook_cb_factory(configured_logbook_func)
 RE.subscribe('start', cb)
 
 import ophyd
+from ophyd.command import (wh_pos, log_pos, mov, movr)
