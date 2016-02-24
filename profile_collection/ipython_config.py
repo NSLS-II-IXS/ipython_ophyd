@@ -81,7 +81,7 @@ c.InteractiveShellApp.extensions = ['pyOlog.cli.ipy']
 
 # Pre-load matplotlib and numpy for interactive use, selecting a particular
 # matplotlib backend and loop integration.
-c.TerminalIPythonApp.pylab = 'auto'
+# c.TerminalIPythonApp.pylab = 'auto'
 
 # Create a massive crash report when IPython encounters what may be an internal
 # error.  The default is to append a short message to the usual traceback
@@ -91,7 +91,7 @@ c.TerminalIPythonApp.pylab = 'auto'
 # c.TerminalIPythonApp.module_to_run = ''
 
 # The date format used by logging formatters for %(asctime)s
-c.TerminalIPythonApp.log_datefmt = '%Y-%m-%d %H:%M:%S'
+# c.TerminalIPythonApp.log_datefmt = '%Y-%m-%d %H:%M:%S'
 
 # Whether to overwrite existing config files when copying
 # c.TerminalIPythonApp.overwrite = False
@@ -195,7 +195,7 @@ c.TerminalIPythonApp.log_datefmt = '%Y-%m-%d %H:%M:%S'
 # c.TerminalInteractiveShell.disable_failing_post_execute = False
 
 # Show rewritten input, e.g. for autocall.
-c.TerminalInteractiveShell.show_rewritten_input = True
+# c.TerminalInteractiveShell.show_rewritten_input = True
 
 # Set the color scheme (NoColor, Linux, or LightBG).
 # c.TerminalInteractiveShell.colors = 'Linux'
@@ -295,7 +295,7 @@ c.TerminalInteractiveShell.show_rewritten_input = True
 # c.TerminalInteractiveShell.deep_reload = False
 
 # Start logging to the given file in append mode.
-c.TerminalInteractiveShell.logappend = '/epics/xf/23id/ophyd/logs/xf23id1_log.py'
+# c.TerminalInteractiveShell.logappend = '/epics/xf/23id/ophyd/logs/xf23id1_log.py'
 
 #
 # c.TerminalInteractiveShell.xmode = 'Context'
