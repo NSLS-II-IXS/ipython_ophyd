@@ -38,4 +38,4 @@ cb = logbook_cb_factory(configured_logbook_func)
 RE.subscribe('start', cb)
 
 import ophyd
-from ophyd.command import (wh_pos, log_pos, mov, movr)
+from ophyd.commands import (wh_pos, log_pos, mov, movr)
