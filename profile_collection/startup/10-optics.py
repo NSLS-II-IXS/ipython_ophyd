@@ -1,4 +1,5 @@
-from ophyd import (Device, Component as Cpt, EpicsMotor)
+from ophyd import (Device, Component as Cpt, EpicsMotor, PVPositioner,
+                   FormattedComponent as FCpt)
 
 
 # defined here, also used in 10-optics.py
@@ -82,6 +83,34 @@ class Pinhole(Device):
     dy = Cpt(EpicsMotor, '-Ax:DY}Mtr')
 
 
+class MCMBase(PVPositioner):
+    setpoint = FCpt(EpicsSignal, '{self.prefix}{self._ch_name}')
+    readback = FCpt(EpicsSignal, '{self.prefix}{self._ch_name}')
+    actuate = Cpt(EpicsSignal, '}Mov')
+    actuate_value = 1
+    stop_signal = Cpt(EpicsSignal, '}Kill')
+    stop_value = 1
+    # all six axes are coupled, so 'InPos' is an array of six values
+    done = Cpt(EpicsSignal, '}Mtr_InPos')
+    done_value = True
+
+    def __init__(self, prefix, ch_name=None, **kwargs):
+        self._ch_name = ch_name
+        super().__init__(prefix, **kwargs)
+
+    @property
+    def moving(self):
+        return (self.done_value != all(self.done.get(use_monitor=False)))
+
+
+class MCM(Device):
+    x = Cpt(MCMBase, '', ch_name='-Ax:X}Mtr')
+    y = Cpt(MCMBase, '', ch_name='-Ax:Y}Mtr')
+    z = Cpt(MCMBase, '', ch_name='-Ax:Z}Mtr')
+    theta = Cpt(MCMBase, '', ch_name='-Ax:Rx}Mtr')
+    phi = Cpt(MCMBase, '', ch_name='-Ax:Ry}Mtr')
+    chi = Cpt(MCMBase, '', ch_name='-Ax:Rz}Mtr')
+
 
 dcm = DCM('XF:10IDA-OP{Mono:DCM', name='dcm')
 vfm = VFM('XF:10IDD-OP{VFM:1', name='vfm')
@@ -100,3 +129,5 @@ bpm2_diag = EpicsMotor('XF:10IDC-BI{BPM:2-Ax:Y}Mtr', name='bpm2_diag')
 ssa = SSA('XF:10IDB-OP{SSA:1', name='ssa')
 k3 = Table('XF:10IDC-OP{Tbl:1', name='k3')
 ph = Pinhole('XF:10IDD-OP{Pinh:1', name='ph')
+
+mcm = MCM('XF:10IDD-OP{MCM:1', name='mcm')
