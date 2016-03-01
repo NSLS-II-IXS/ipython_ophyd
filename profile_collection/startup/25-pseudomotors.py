@@ -1,5 +1,6 @@
 from ophyd import (EpicsMotor, PseudoSingle, PseudoPositioner,
                    Component as Cpt)
+from ophyd.pseudopos import (pseudo_position_argument, real_position_argument)
 import numpy as np
 from scipy import interpolate
 
@@ -69,7 +70,7 @@ _si_111 = 3.1363
 
 
 class BLEnergy(PseudoPositioner):
-    # limits and constants from Spec file, "xf10id_site.mac"
+    # limits and constants from Spec file, "site.mac"
     energy = Cpt(PseudoSingle, limits=(7.835, 17.7))
 
     theta = Cpt(EpicsMotor, 'XF:10IDA-OP{Mono:DCM-Ax:P}Mtr')
@@ -91,3 +92,87 @@ class BLEnergy(PseudoPositioner):
 
 
 bl_energy = BLEnergy('', name='bl_energy', egu='eV')
+
+# ripped from Spec file, "site.mac"
+th0 = 38.5857476
+
+A0y = 1.21523
+A0z = 7.20726
+B0y = 3.08561
+B0z = 6.57882
+C0y = 0.36531
+C0z = 3.16942
+anz = 4.03784
+bny = 1.87038
+bnz = -0.62844
+b2 = bny*bny + bnz*bnz
+cny = 2.72030
+cnz = 3.40940
+c2 = cny*cny + cnz*cnz
+c1 = np.sqrt(c2)
+d2 = B0y*B0y + B0z*B0z
+dn = np.sqrt(d2)
+h2 = C0y*C0y + C0z*C0z
+hn = np.sqrt(h2)
+
+
+class AnalyzerCXtal(PseudoPositioner):
+    theta  = Cpt(PseudoSingle, egu='deg')
+    height = Cpt(PseudoSingle, egu='mm')
+
+    uy = Cpt(EpicsMotor, 'XF:10IDD-OP{Analy:1-Ax:UY}Mtr')
+    dy = Cpt(EpicsMotor, 'XF:10IDD-OP{Analy:1-Ax:DY}Mtr')
+
+    @pseudo_position_argument
+    def forward(self, pseudopos):
+        ddy = np.zeros((2,), dtype=float)
+        cth = pseudopos.theta + th0
+        ccy = pseudopos.height
+
+        cy = c1*np.sin(np.deg2rad(cth))
+        cz = np.sqrt(c2 - cy*cy)
+        a2 = anz*anz + c2 - b2 - 2*anz*cz
+        d2 = np.sqrt(cy*cy - a2)
+        a1 = (c2 + h2 -d2)/2.
+        d1 = cz*np.sqrt(c2*h2 - a1*a1)
+        hy = (a1*cy + d1)/c2
+        #
+        # first motor position (mm)
+        y1 = 0.01*ccy - hy - C0y
+        ddy[0] = 100.*y1
+        #
+        #
+        # second motor position (mm)
+        y2 = C0y + y1 + cy - d2 - A0y
+        ddy[1] = 100.*y2
+
+        return self.RealPosition(uy=ddy[0], dy=ddy[1])
+
+    @real_position_argument
+    def inverse(self, realpos):
+        ccp = np.zeros((2,), dtype=float)
+        # d2y == a2uy, d1y == a2dy
+        d1y = self.uy.position
+        d2y = self.dy.position
+
+        any = 0.84992 + 0.01*(d2y - d1y)
+        a2 = any*any + anz*anz
+        a1 = (c2 + a2 - b2)/2.
+        d1 = anz*np.sqrt(a2*c2 - a1*a1)
+        cy = (a1*any + d1)/a2
+        cz = np.sqrt(c2 - cy*cy)
+        #
+        # crystal angle (rad)
+        ccp[0] = np.deg2rad(np.arcsin(cy/c1))
+        # how to handle negative sqrts here??
+        d2 = cz*np.sqrt(c2*h2 - a2*a2)
+        a2 = (c2 + h2 - d2)/2.
+        hy = (a2*cy + d2)/c2
+        #
+        # crystal y-position
+        ccp[1] = 100.*(C0y + 0.01*d1y + hy)
+
+        return self.PseudoPosition(theta=ccp[0]-th0, height=ccp[1])
+
+
+anc_xtal = AnalyzerCXtal('', name='anc_xtal', egu=('deg', 'mm'))
