@@ -91,7 +91,30 @@ class BLEnergy(PseudoPositioner):
         return self.PseudoPosition(energy=en)
 
 
-bl_energy = BLEnergy('', name='bl_energy', egu='eV')
+blE = BLEnergy('', name='blE', egu='eV')
+
+
+class DCMEnergy(PseudoPositioner):
+    # limits and constants from Spec file, "site.mac"
+    energy = Cpt(PseudoSingle, limits=(7.835, 17.7))
+
+    theta = Cpt(EpicsMotor, 'XF:10IDA-OP{Mono:DCM-Ax:P}Mtr')
+    z2 = Cpt(EpicsMotor, 'XF:10IDA-OP{Mono:DCM-Ax:Z2}Mtr')
+
+
+    def forward(self, pseudo_pos):
+        _th = np.rad2deg(np.arcsin(_hc/(2.*_si_111*pseudo_pos)))
+        _z2 = 15./np.cos(np.deg2rad(_th)) - 15.
+
+        return self.RealPosition(theta=_th, z2=_z2)
+
+    def inverse(self, real_pos):
+        en = _hc/(2.*_si_111*np.sin(np.deg2rad(real_pos.theta)))
+        en = float(en)
+        return self.PseudoPosition(energy=en)
+
+
+dcmE = DCM_Energy('', name='dcmE', egu='eV')
 
 
 # constants for HRM2 energy conversion
