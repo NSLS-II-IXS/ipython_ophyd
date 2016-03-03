@@ -114,7 +114,7 @@ class DCMEnergy(PseudoPositioner):
         return self.PseudoPosition(energy=en)
 
 
-dcmE = DCM_Energy('', name='dcmE', egu='eV')
+dcmE = DCMEnergy('', name='dcmE', egu='eV')
 
 
 # constants for HRM2 energy conversion
