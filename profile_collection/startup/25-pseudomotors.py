@@ -123,19 +123,19 @@ _EB = 9.1317
 class HRMEnergy(PseudoPositioner):
     energy = Cpt(PseudoSingle)
 
-    huof = Cpt(EpicsMotor, 'XF:10IDB-OP{Mono:HRM2-Ax:UTO}Mtr')
-    hdof = Cpt(EpicsMotor, 'XF:10IDB-OP{Mono:HRM2-Ax:DTO}Mtr')
+    uof = Cpt(EpicsMotor, 'XF:10IDB-OP{Mono:HRM2-Ax:UTO}Mtr')
+    dof = Cpt(EpicsMotor, 'XF:10IDB-OP{Mono:HRM2-Ax:DTO}Mtr')
 
     def forward(self, pseudo_pos):
         _pos = -1.0*pseudo_pos.energy*np.tan(np.deg2rad(_TB))/_EB
-        return self.RealPosition(huof=_pos, hdof=_pos)
+        return self.RealPosition(uof=_pos, dof=_pos)
 
     def inverse(self, real_pos):
-        _energy = -1.0*_EB*real_pos.huof/np.tan(np.deg2rad(_TB))
+        _energy = -1.0*_EB*real_pos.uof/np.tan(np.deg2rad(_TB))
         return self.PseudoPosition(energy=_energy)
 
 
-hrm_energy = HRMEnergy('', name='hrm_energy', egu='eV')
+hrmE = HRMEnergy('', name='hrmE', egu='eV')
 
 
 # ripped from Spec file, "site.mac"
