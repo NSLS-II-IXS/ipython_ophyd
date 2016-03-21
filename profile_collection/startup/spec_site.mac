@@ -1,0 +1,1602 @@
+# call cplot from IXS/SPEC Macros/ESRF Macros
+qdo /usr/local/lib/spec.d/cplot.mac
+
+# call beam check macros
+qdo /usr/local/lib/spec.d/beamchkon.mac
+qdo /usr/local/lib/spec.d/beamchkoff.mac
+qdo /usr/local/lib/spec.d/chk_beam_sp8.mac
+
+# macromotor 'ugap' for undulator gap scan
+#
+def ugapmot_cmd(mne, key, p1) '{
+    local pm
+    if (key == "set_position") {  ### do not set gap position with spec
+        return
+    }
+    if (key == "position") {     ### read gap position of the undulator
+        if (mne == ugap) {
+            pm = epics_get("SR:C10-ID:G1{IVU22:1}Y1:Rbv")
+	    return(pm)}
+        else return(0)
+    }
+    if (key == "start_one") {     ### move gap to preset position
+        if (mne == ugap) {
+            epics_put("SR:C10-ID:G1{IVU22:1}Man:SP:Gap", p1)
+            sleep(1)
+            epics_put("SR:C10-ID:G1{IVU22:1}ManG:Go_.PROC", 1)
+	    sleep(2)
+	    pm = epics_get("SR:C10-ID:G1{IVU22:1}PMAC:AXIS1:GetBrake")
+	    for (i=0; i<50 && pm == "Release"; i++) {
+	        sleep(0.5)
+		pm = epics_get("SR:C10-ID:G1{IVU22:1}PMAC:AXIS1:GetBrake")
+            }
+	}
+        else return
+    }
+    if (key == "abort_one") {
+        epics_put("SR:C10-ID:G1{IVU22:1}Man:Stop_.PROC", 1)
+    }
+    if (key == "get_status") {
+        return(0)
+    }
+    if (key == "preread_one") { return }
+    #if (key == "preread_all") {
+    #    A[ugap] = epics_get("SR:C10-ID:G1{IVU22:1}Y1:Rbv")
+    #    return
+    #}
+}'
+#
+# macromotor 'blE' sets the DCM energy and undulator gap
+#
+def monoEset_config(mne, type, unit, module, chan) '{
+    if (type == "mot") {
+        return "dcmz2 dcmth ugap"
+    }
+}'
+def monoEset_calc(mne, mode) '{
+    local en, an, ug, z2, pm
+    if (mode == 0) {
+        if (mne == blE) {
+	   	en = ecalc(A[dcmth])
+		if (en <= 0.)
+		    A[mne] = 0.
+		else
+	            A[mne] = en
+	}
+    } else {
+        an = acalc(A[blE])
+	ug = gcalc(an)
+	z2 = 15./cos(rad(an)) - 15.
+        if (mne == dcmth) {
+	   	#printf("DCM angle = %.7g\n",\an)
+	        A[mne] = an
+                pm = epics_get("XF:10IDA-OP{Mono:DCM-Ax:P}Mtr.DMOV")
+                for (i=0;i<300 && pm<1;i++) {
+                    #pc = epics_get("XF:10IDA-OP{Mono:DCM-Ax:P}Mtr.RBV")
+                    #printf("moving... %.4g\r",3.+pc/25.)
+                    sleep(1)
+                    pm = epics_get("XF:10IDA-OP{Mono:DCM-Ax:P}Mtr.DMOV")
+                }
+	}
+	if (mne == ugap) {
+	   	#printf("Ugap = %.6g\n",\ug)
+	   	A[mne] = ug
+	}
+	if (mne == dcmz2) {
+	   	#printf("DCM gap  = %.4g\n",\z2)
+		A[mne] = z2
+                pm = epics_get("XF:10IDA-OP{Mono:DCM-Ax:Z2}Mtr.DMOV")
+                for (i=0;i<300 && pm<1;i++) {
+                    #pc = epics_get("XF:10IDA-OP{Mono:DCM-Ax:Z2}Mtr.RBV")
+                    #printf("moving... %.4g\r",3.+pc/25.)
+                    sleep(1)
+                    pm = epics_get("XF:10IDA-OP{Mono:DCM-Ax:Z2}Mtr.DMOV")
+                }
+	}
+    }
+}'
+#
+# macromotor 'dcmE' sets the DCM energy only
+#
+def monoEscan_config(mne, type, unit, module, chan) '{
+    if (type == "mot") {
+        return "dcmz2 dcmth"
+    }
+}'
+def monoEscan_calc(mne, mode) '{
+    local en, an, z2, pm
+    if (mode == 0) {
+        if (mne == dcmE) {
+                en = ecalc(A[dcmth])
+                if (en <= 0.)
+                    A[mne] = 0.
+                else
+                    A[mne] = en
+        }
+    } else {
+        an = acalc(A[dcmE])
+        z2 = 15./cos(rad(an)) - 15.
+        if (mne == dcmth) {
+                A[mne] = an
+                pm = epics_get("XF:10IDA-OP{Mono:DCM-Ax:P}Mtr.DMOV")
+                for (i=0;i<300 && pm<1;i++) {
+                    #pc = epics_get("XF:10IDA-OP{Mono:DCM-Ax:P}Mtr.RBV")
+                    #printf("moving... %.4g\r",3.+pc/25.)
+                    sleep(1)
+                    pm = epics_get("XF:10IDA-OP{Mono:DCM-Ax:P}Mtr.DMOV")
+                }
+        }
+ 
+        if (mne == dcmz2) {
+                A[mne] = z2
+                pm = epics_get("XF:10IDA-OP{Mono:DCM-Ax:Z2}Mtr.DMOV")
+                for (i=0;i<300 && pm<1;i++) {
+                    #pc = epics_get("XF:10IDA-OP{Mono:DCM-Ax:Z2}Mtr.RBV")
+                    #printf("moving... %.4g\r",3.+pc/25.)
+        	        sleep(1)
+                    pm = epics_get("XF:10IDA-OP{Mono:DCM-Ax:Z2}Mtr.DMOV")
+                }
+        }
+    }
+}'
+#
+# macro "bpm1_p" for BPM1 Y-axis
+#
+def bpm1pmot_cmd(mne, key, p1) '{
+    local pt, pc, pm, ps
+    #printf("Key = %s\n",\key)
+    if (key == "set_position") {  ### do not set position with spec
+        return
+    }
+    if (key == "position") {     ### read position of the bpm1_p
+        if (mne == bpm1_p) {
+            pc = epics_get("XF:10IDA-BI{BPM:1-Ax:YFoil}Mtr.RBV")
+	    #printf("bpm1_p position %.4g",3+pc/25)
+            return 1*(3+pc/25)}
+        else return(0)
+    }
+    if (key == "start_one") {     ### move bpm1_p to preset position
+        if (mne == bpm1_p) {
+	    #printf("p1 = %.4g\n",p1)
+	    if (p1 < 1 ) { return }
+	    if (p1 == 1) { pt = -49. }
+	    if (p1 == 2) { pt = -25. }
+	    if (p1 == 3) { pt = 0.   }
+	    if (p1 == 4) { pt = 25.  }
+	    if (p1 == 5) { pt = 49.  }
+	    if (p1 > 5) { return }
+            epics_put("XF:10IDA-BI{BPM:1-Ax:YFoil}Mtr.VAL", pt)
+	    pm = epics_get("XF:10IDA-BI{BPM:1-Ax:YFoil}Mtr.DMOV")
+	    #printf("pm = %.4g\n",\pm)
+	    ps = 0
+	    for (j=0;j<10 && ps<1;j++) {
+	        #printf("moving...")
+	        for (i=0;i<300 && pm<1;i++) {
+		    pc = epics_get("XF:10IDA-BI{BPM:1-Ax:YFoil}Mtr.RBV")
+		    printf("moving... %.4g\r",3.+pc/25.)
+	            sleep(1)
+		    pm = epics_get("XF:10IDA-BI{BPM:1-Ax:YFoil}Mtr.DMOV")
+		}
+	        pc = epics_get("XF:10IDA-BI{BPM:1-Ax:YFoil}Mtr.RBV")
+	        if (pc != pt) {
+		    epics_put("XF:10IDA-BI{BPM:1-Ax:YFoil}Mtr.VAL", pt)
+		    pm = epics_get("XF:10IDA-BI{BPM:1-Ax:YFoil}Mtr.DMOV")
+		} else { ps = 1 }
+            }
+	    printf("done...         \n")
+        }
+        else { return }
+    }
+    if (key == "abort_one") {
+        epics_put("XF:10IDA-BI{BPM:1-Ax:YFoil}Mtr.STOP", 1)
+    }
+    if (key == "get_status") {
+        return(0)
+    }
+    if (key == "preread_one") { return }
+    if (key == "preread_all") {
+            #pc = epics_get("XF:10IDA-BI{BPM:1-Ax:YFoil}Mtr.RBV")
+            #printf("bpm1_p position %.4g",3+pc/25)
+            return }
+}'
+#
+# macro "bpm2_p" for BPM2 Y-axis
+#
+def bpm2pmot_cmd(mne, key, p1) '{
+    local pt, pc, pm, ps
+    if (key == "set_position") {  ### do not set position with spec
+        return
+    }
+    if (key == "position") {     ### read position of the bpm1_p
+        if (mne == bpm2_p) {
+            pc = epics_get("XF:10IDC-BI{BPM:2-Ax:Y}Mtr.RBV")
+            return 1*(5+pc/25)}
+        else return(0)
+    }
+    if (key == "start_one") {     ### move bpm1_p to preset position
+        if (mne == bpm2_p) {
+            if (p1 < 1 ) { return }
+            if (p1 == 1) { pt = -97.}
+            if (p1 == 2) { pt = -75.}
+            if (p1 == 3) { pt = -50.}
+            if (p1 == 4) { pt = -25.}
+            if (p1 == 5) { pt =  0.}
+            if (p1 > 5) { return }
+            epics_put("XF:10IDC-BI{BPM:2-Ax:Y}Mtr.VAL", pt)
+            pm = epics_get("XF:10IDC-BI{BPM:2-Ax:Y}Mtr.DMOV")
+            ps = 0
+            for (j=0;j<10 && ps<1;j++) {
+                for (i=0;i<300 && pm<1;i++) {
+                    pc = epics_get("XF:10IDC-BI{BPM:2-Ax:Y}Mtr.RBV")
+                    printf("moving... %.4g\r",5.+pc/25.)
+                    sleep(1)
+                    pm = epics_get("XF:10IDC-BI{BPM:2-Ax:Y}Mtr.DMOV")
+                }
+                pc = epics_get("XF:10IDC-BI{BPM:2-Ax:Y}Mtr.RBV")
+                if (pc != pt) {
+                    epics_put("XF:10IDC-BI{BPM:2-Ax:Y}Mtr.VAL", pt)
+                    pm = epics_get("XF:10IDC-BI{BPM:2-Ax:Y}Mtr.DMOV")
+                } else { ps = 1 }
+            }
+            printf("done...          \n")
+        }
+        else { return }
+    }
+    if (key == "abort_one") {
+        epics_put("XF:10IDC-BI{BPM:2-Ax:Y}Mtr.STOP", 1)
+    }
+    if (key == "get_status") {
+        return(0)
+    }
+    if (key == "preread_one") { return }
+    if (key == "preread_all") { return }
+}'
+#
+# calculate Ugap for given DCM angle
+#
+def gcalc(ad) '{
+    local Gm[], Tm[], as, gc, n, s1, s2, ds
+    #sscanf($*,"%.6d",ad)
+    Gm[0] = 6184.
+    Gm[1] = 6368.
+    Gm[2] = 6550.
+    Gm[3] = 6730.
+    Gm[4] = 6909.
+    Gm[5] = 7086.
+    Gm[6] = 7262.
+    Gm[7] = 7438.
+    Gm[8] = 7613.
+    Gm[9] = 7788.
+    Gm[10] = 7962.
+    Gm[11] = 8138.
+    Gm[12] = 8311.
+    Gm[13] = 8486.
+    Gm[14] = 8662.
+    Gm[15] = 8840.
+    Gm[16] = 9019.
+    Gm[17] = 9200.
+    Gm[18] = 9382.
+    Gm[19] = 9567.
+    Gm[20] = 9753.
+    Gm[21] = 9943.
+    Gm[22] = 10136.
+    Gm[23] = 10332.
+    Gm[24] = 10531.
+    Gm[25] = 10740.
+    Gm[26] = 10960.
+    Gm[27] = 11385.
+    Tm[0] = 16.401781
+    Tm[1] = 15.821071
+    Tm[2] = 15.280587
+    Tm[3] = 14.776273
+    Tm[4] = 14.304428
+    Tm[5] = 13.862182
+    Tm[6] = 13.446656
+    Tm[7] = 13.055574
+    Tm[8] = 12.686789
+    Tm[9] = 12.338436
+    Tm[10] = 12.008851
+    Tm[11] = 11.696607
+    Tm[12] = 11.400018
+    Tm[13] = 11.118472
+    Tm[14] = 10.850483
+    Tm[15] = 10.595196
+    Tm[16] = 10.351707
+    Tm[17] = 10.119222
+    Tm[18] = 9.896987
+    Tm[19] = 9.684357
+    Tm[20] = 9.480717
+    Tm[21] = 9.285540
+    Tm[22] = 9.098203
+    Tm[23] = 8.918375
+    Tm[24] = 8.745500
+    Tm[25] = 8.579178
+    Tm[26] = 8.419150
+    Tm[27] = 8.116450
+    if (ad<7.835 || ad>17.7) {
+        printf("DCM energy is out of range")
+	return}
+    if (ad<Tm[27]) {
+        s1 = sin(rad(Tm[27]))
+	s2 = sin(rad(Tm[26]))
+	g1 = Gm[27]
+	g2 = Gm[26]}
+    else if (ad>Tm[0]) {
+        s1 = sin(rad(Tm[1]))
+        s2 = sin(rad(Tm[0]))
+        g1 = Gm[1]
+        g2 = Gm[0]}
+    else {
+    	n = 0
+        for (i=1;i<28 && n<1;i++) {
+            if (ad >= Tm[i]) {
+	        s1 = sin(rad(Tm[i]))
+		s2 = sin(rad(Tm[i-1]))
+		g1 = Gm[i]
+		g2 = Gm[i-1]
+		n = 1
+            }
+        }
+    }
+    as = sin(rad(ad))
+    gc = g1 + (as-s1)*(g2-g1)/(s2-s1)
+    #printf("Calculated gap : %.8g\n",\gc)
+    return gc
+}'
+#
+# energy calculation from DCM angle (deg)
+#
+def ecalc(th) '{
+    local dd, ct
+    ct = 12398.4193
+    dd = 3.1363
+    en = ct/(2.*dd*sin(rad(th)))
+    return en
+}'
+#
+# DCM angle calculation from energy (eV)
+#
+def acalc(en) '{
+    local dd, ct
+    ct = 12398.4193
+    dd = 3.1363
+    ang = deg(asin(ct/(2.*dd*en)))
+    return ang
+}'
+#
+# macro counter for BPM2 camera image centroid
+#
+def bpm2centroid_cmd(mne, key, p1, p2) '{
+    local imin, imax, ibck, cX, cY
+    if (key == "counts") {
+        imin = epics_get("XF:10IDC-BI{BPM2-Cam:1}Stats1:MinValue_RBV")
+        imax = epics_get("XF:10IDC-BI{BPM2-Cam:1}Stats1:MaxValue_RBV")
+        ibck = imin + 2.*imax/3.
+        epics_put("XF:10IDC-BI{BPM2-Cam:1}Stats1:CentroidThreshold",ibck)
+        if (mne == bpm2cx) {
+	    #epics_put("XF:10IDC-BI{BPM2-Cam:1}Stats1:CentroidThreshold",ibck)
+	    return 1*( epics_get("XF:10IDC-BI{BPM2-Cam:1}Stats1:CentroidY_RBV"))}
+	else if (mne == bpm2cy) {
+            #epics_put("XF:10IDC-BI{BPM2-Cam:1}Stats1:CentroidThreshold",ibck)
+	    return 1*( epics_get("XF:10IDC-BI{BPM2-Cam:1}Stats1:CentroidX_RBV"))}
+    }
+    if (key == "halt_all") return
+    if (key == "halt_one") return
+    if (key == "prestart_all") return
+    if (key == "prestart_one") return
+}'
+#
+# macro counter for AH174
+def AH174_cmd(mne, key, p1, p2) '{
+    local ps, pm
+    if (key == "prestart_all") {
+        #p "parameters p1 = ",p1,"   p2 = ",p2
+        ps = epics_get("XF:10ID-BI:AH174:AcquireMode")
+	if (ps == "Continuous") {
+	    epics_put("XF:10ID-BI:AH174:AcquireMode",1)
+	}
+        epics_put("XF:10ID-BI:AH174:AveragingTime",COUNT_TIME)
+    }
+    if (key == "start_one") {
+        ps = epics_get("XF:10ID-BI:AH174:AcquireMode")
+        if (ps == "Continuous") {
+            epics_put("XF:10ID-BI:AH174:AcquireMode",1)
+        }
+	epics_put("XF:10ID-BI:AH174:AveragingTime",COUNT_TIME)
+    }
+    if (key == "counts") {
+	if (mne == xeye3) {
+	    #p "parameters p1 = ",p1,"   p2 = ",p2
+	    epics_put("XF:10ID-BI:AH174:Acquire",1)
+	    pm = epics_get("XF:10ID-BI:AH174:Acquire")
+	    for (i=0; i<30 && pm == "Acquire"; i++) {
+	        sleep(0.1)
+		pm = epics_get("XF:10ID-BI:AH174:Acquire")
+            }
+	    return 1*(epics_get("XF:10ID-BI:AH174:Current1:MeanValue_RBV"))
+	}
+    }
+}'
+#
+#switch the printer on , every thing on the screen will
+#         be sent to the printer until you type poff
+def pon '{
+   local fileS
+   file = sprintf("/tmp/pp%s%s.log", USER, SPEC)
+   if (file_info(file, "-f") == 1)
+      unix(sprintf("rm %s", file))
+   on(file)
+   printf("PRINTER LOGFILE at %s from %s",date(),USER)
+}'
+#
+#
+#switch the printer off and print the screen output since
+#          the last pon command
+#  3/9/98 - MP - option o12 to reduce sligthly the output so that
+#                it fits in a page
+def poff '{
+   local file
+   file = sprintf("/tmp/pp%s%s.log", USER, SPEC)
+   close(file)
+   unix(sprintf("lpr -o page-left=-20 -o page-top=-30 -o fit-to-page -o portrait -o nowrap -o scaling=75 %s", file))
+}'
+#
+def pplot '{
+  unix(sprintf("/usr/bin/X11/xwd -id 0x3400001 -out /tmp/%s%sdump.xwd",USER,SPEC))
+  unix(sprintf("convert /tmp/%s%sdump.xwd -resize \'450\' /tmp/%s%sdump.ps",USER,SPEC,USER,SPEC))
+  #unix(sprintf("display /tmp/%s%sdump.ps",USER,SPEC))
+  #unix(sprintf("lpr -o fitplot /tmp/%s%sdump.ps",USER,SPEC))
+  unix(sprintf("lpr -o scaling=75 /tmp/%s%sdump.ps",USER,SPEC))
+}'
+#
+#dump a window to the printer - works on HP
+def dump '{
+    unix(sprintf("/usr/bin/X11/xwd -out /tmp/%s%sdump",USER,SPEC))
+    #unix(sprintf("/usr/bin/X11/xpr -device ps -out /tmp/%s%sdump.ps -gray 4 /tmp/%s%sdump",USER,SPEC,USER,SPEC))
+    #unix(sprintf("lpr /tmp/%s%sdump.ps",USER,SPEC))
+  unix(sprintf("convert /tmp/%s%sdump.xwd -resize \'450\' /tmp/%s%sdump.ps",USER,SPEC,USER,SPEC))
+  unix(sprintf("lpr -o scaling=75 /tmp/%s%sdump.ps",USER,SPEC))
+}'
+#
+# screen print of the CRL positions
+def wcrl '{
+    wmm crlx crly crlth
+}'
+#
+# screen print the DCM motor positions
+def wdcm '{
+    wmm dcmy dcmth dcmz2 dcmp1 dcmr2 dcmpf
+}'
+#
+# screen print slits 1 positions
+def ws1 '{
+    wmm s1t s1b s1o s1i
+}'
+#
+# screen print slits 2 positions
+def ws2 '{
+    wmm s2t s2b s2o s2i
+}'
+#
+#
+# screen print slits 3 positions
+def ws3 '{
+    wmm s3t s3b s3o s3i
+}'
+#
+# screen print ssa positions
+def wssa '{
+    wmm ssat ssab
+}'
+#
+# screen print VFM positions
+def wvfm '{
+    wmm vmux vmdx vmuy vmdy vmub vmdb
+}'
+#
+# screen print HFM positions
+def whfm '{
+    wmm hmux hmdx hmuy hmdy hmub hmdb
+}'
+#
+# screen print energy positions
+def wen '{
+    wmm ugap blE dcmE
+}'
+#
+# screen print FE slits positions
+def wfs '{
+    wmm fst fsb fso fsi
+}'
+#
+# screen print HRM positions
+def whrm '{
+    wmm hrmE
+    wmm hux huy huth huif huof
+    wmm hdx hdy hdth hdif hdof
+}'
+#
+# screen print of the JJXray slits positions
+def wjj '{
+    wmm jjt jjb jji jjo
+}'
+#
+# screen print CDW positions
+def wcdw '{
+    wmm k3x k3y k3th dphi dthe dfthe wchi wthe wfthe
+}'
+#
+# screen print sample position
+def wsam '{
+    wmm tth th phi chi
+    wmm stx sty stz ssx ssy ssz
+}'
+#
+# screen print MCM positions
+def wmcm '{
+    wmm mcmst mcmsb mcms2o mcms2i
+    wmm mcmx mcmy mcmz mcmthe mcmphi mcmchi
+}'
+#
+# screen print analyzer positions
+def wana '{
+    wmm acyy acth acfth awfth
+    wmm anuy andy acchi awchi
+    wmm d1the d2the d3the d4the d5the d6the
+    wmm d1phi d2phi d3phi d4phi d5phi d6phi
+    wmm sant sanb anpd
+}'
+#
+def wmm '{
+    local i, j, k, l, m[], n, t, s[]
+    local sfmt, ffmt, cols, p, w
+
+    if ($# == 0) {
+    eprint "Usage:  wm motor [motor ...]"
+    exit
+    }
+    n = split("$*", m)
+    for (i in m)
+    if ((m[i] = motor_num(t = m[i])) < 0) {
+        eprintf("Invalid motor:  \"%s\".\n", t)
+	    exit
+	    }
+
+    p = _mprec(m, n)        # p is precision
+    w = p + 5               # w is width
+    tty_cntl("resized?")
+    cols = int((COLS - w) / (w + 1))
+    if (MOTOR_FMT_COLS > 0 && MOTOR_FMT_COLS < cols)
+    cols = MOTOR_FMT_COLS
+    sfmt = sprintf("%%%d.%ds", w, w)
+    ffmt = sprintf("%%%d.%df", w, p)
+
+    # distribute evenly over needed rows
+    if (n > cols) {
+    i = int((n - 1) / cols) + 1
+    cols = int((n - 1) / i) + 1
+    }
+
+    get_angles_func()
+    for (k = 0; k < n; k += cols) {
+    s[0] = sprintf("\n%*s", w, "")
+    s[1] = sprintf("%*s", w, "")
+    s[3] = sprintf(" ")
+    s[2] = sprintf("%-*s", w, " Current")
+    for (i = 0, j = k; i < cols && j < n; j++) {
+        s[0] = s[0] sprintf(sfmt, motor_name(m[j]))
+	s[1] = s[1] sprintf(sfmt, motor_mne(m[j]))
+	s[2] = s[2] _mfit(w, p, sprintf(ffmt, A[m[i]]))
+		if (++i < cols)
+		    for (l = 0; l < 4; l++)
+			s[l] = s[l] " "
+			}
+        for (i = 0; i < 4; i++)
+	    print s[i]
+    }
+}'
+#
+# disables DCM motors
+def dcmdis '{
+    motor_par(dcmp1,"disable",1)
+    motor_par(dcmth,"disable",1)
+    motor_par(dcmr2,"disable",1)
+    motor_par(dcmz2,"disable",1)
+    motor_par(dcmy,"disable",1)
+    motor_par(dcmpf,"disable",1)
+}'
+#
+# disable CRL motors
+def crldis '{
+    motor_par(crlx,"disable",1)
+    motor_par(crly,"disable",1)
+    motor_par(crlth,"disable",1)
+}'
+#
+# disable FE slits
+def fsdis '{
+    motor_par(fst,"disable",1)
+    motor_par(fsb,"disable",1)
+    motor_par(fsi,"disable",1)
+    motor_par(fso,"disable",1)
+}'
+#
+# enable CRL motors
+def crlenb '{
+    motor_par(crlx,"disable",0)
+    motor_par(crly,"disable",0)
+    motor_par(crlth,"disable",0)
+}'
+#
+# enable FE slits
+def fsenb '{
+    motor_par(fst,"disable",0)
+    motor_par(fsb,"disable",0)
+    motor_par(fsi,"disable",0)
+    motor_par(fso,"disable",0)
+}'
+#
+# enables DCM motors
+def dcmenb '{
+    motor_par(dcmp1,"disable",0)
+    motor_par(dcmth,"disable",0)
+    motor_par(dcmr2,"disable",0)
+    motor_par(dcmz2,"disable",0)
+    motor_par(dcmy,"disable",0)
+    motor_par(dcmpf,"disable",0)
+}'
+#
+# disable VFM motors
+def vfmdis '{
+    motor_par(vmux,"disable",1)
+    motor_par(vmuy,"disable",1)
+    motor_par(vmdx,"disable",1)
+    motor_par(vmdy,"disable",1)
+    motor_par(vmub,"disable",1)
+    motor_par(vmdb,"disable",1)
+}'
+#
+# enable VFM motors
+def vfmenb '{
+    motor_par(vmux,"disable",0)
+    motor_par(vmuy,"disable",0)
+    motor_par(vmdx,"disable",0)
+    motor_par(vmdy,"disable",0)
+    motor_par(vmub,"disable",0)
+    motor_par(vmdb,"disable",0)
+}'
+#
+# disable HFM motors
+def hfmdis '{
+    motor_par(hmux,"disable",1)
+    motor_par(hmuy,"disable",1)
+    motor_par(hmdx,"disable",1)
+    motor_par(hmdy,"disable",1)
+    motor_par(hmub,"disable",1)
+    motor_par(hmdb,"disable",1)
+}'
+#
+# enable HFM motors
+def hfmenb '{
+    motor_par(hmux,"disable",0)
+    motor_par(hmuy,"disable",0)
+    motor_par(hmdx,"disable",0)
+    motor_par(hmdy,"disable",0)
+    motor_par(hmub,"disable",0)
+    motor_par(hmdb,"disable",0)
+}'
+#
+# disable C-hutch motors
+def chdis '{
+    motor_par(k3x,"disable",1)
+    motor_par(k3y,"disable",1)
+    motor_par(k3th,"disable",1)
+    motor_par(dphi,"disable",1)
+    motor_par(dthe,"disable",1)
+    motor_par(wthe,"disable",1)
+    motor_par(wchi,"disable",1)
+    motor_par(dfthe,"disable",1)
+    motor_par(wfthe,"disable",1)
+    motor_par(jjt,"disable",1)
+    motor_par(jjb,"disable",1)
+    motor_par(jjo,"disable",1)
+    motor_par(jji,"disable",1)
+    motor_par(bicu,"disable",1)
+    motor_par(bicd,"disable",1)
+    motor_par(pd1,"disable",1)
+    motor_par(pd2,"disable",1)
+}'
+#
+# enable C-hutch motors
+def chenb '{
+    motor_par(k3x,"disable",0)
+    motor_par(k3y,"disable",0)
+    motor_par(k3th,"disable",0)
+    motor_par(dphi,"disable",0)
+    motor_par(dthe,"disable",0)
+    motor_par(wthe,"disable",0)
+    motor_par(wchi,"disable",0)
+    motor_par(dfthe,"disable",0)
+    motor_par(wfthe,"disable",0)
+    motor_par(jjt,"disable",0)
+    motor_par(jjb,"disable",0)
+    motor_par(jjo,"disable",0)
+    motor_par(jji,"disable",0)
+    motor_par(bicu,"disable",0)
+    motor_par(bicd,"disable",0)
+    motor_par(pd1,"disable",0)
+    motor_par(pd2,"disable",0)
+}'
+#
+# disable Sample Tower motors
+def stdis '{
+    motor_par(stx,"disable",1)
+    motor_par(sty,"disable",1)
+    motor_par(stz,"disable",1)
+}'
+#
+# enable Sample Tower motors
+def stenb '{
+    motor_par(stx,"disable",0)
+    motor_par(sty,"disable",0)
+    motor_par(stz,"disable",0)
+}'
+#
+# disable HRM motors
+def hrmdis '{
+    motor_par(hux,"disable",1)
+    motor_par(huy,"disable",1)
+    motor_par(huth,"disable",1)
+    motor_par(huch,"disable",1)
+    motor_par(huif,"disable",1)
+    motor_par(huof,"disable",1)
+    motor_par(hdx,"disable",1)
+    motor_par(hdy,"disable",1)
+    motor_par(hdth,"disable",1)
+    motor_par(hdch,"disable",1)
+    motor_par(hdif,"disable",1)
+    motor_par(hdof,"disable",1)
+}'
+#
+# enable HRM motors
+def hrmenb '{
+    motor_par(hux,"disable",0)
+    motor_par(huy,"disable",0)
+    motor_par(huth,"disable",0)
+    motor_par(huch,"disable",0)
+    motor_par(huif,"disable",0)
+    motor_par(huof,"disable",0)
+    motor_par(hdx,"disable",0)
+    motor_par(hdy,"disable",0)
+    motor_par(hdth,"disable",0)
+    motor_par(hdch,"disable",0)
+    motor_par(hdif,"disable",0)
+    motor_par(hdof,"disable",0)
+}'
+#
+# disable MCM motors
+def mcmdis '{
+    motor_par(mcmx,"disable",1)
+    motor_par(mcmy,"disable",1)
+    motor_par(mcmz,"disable",1)
+}'
+#
+# macromotor 'fstmot' for FrontEnd Top slit
+#
+def fstmot_cmd(mne, key, p1) '{
+    local fs_off, ptemp, pm
+    fs_off = 0.369
+    if (key == "set_position") {  ### do not set position with spec
+        return
+    }
+    if (key == "position") {     ### read position
+        if (mne == fst) {
+            ptemp = epics_get("FE:C10A-OP{Slt:1-Ax:T}Mtr.VAL") - fs_off
+            return(ptemp)}
+        else return(0)
+    }
+    if (key == "start_one") {     ### move to preset position
+        if (mne == fst) {
+	    ptemp = p1 + fs_off
+            epics_put("FE:C10A-OP{Slt:1-Ax:T}Mtr.VAL", ptemp)
+	    pm = epics_get("FE:C10A-OP{Slt:1-Ax:T}Mtr.DMOV")
+	    for (i=0; i<30 && pm <1; i++) {
+	        sleep(0.1)
+		pm = epics_get("FE:C10A-OP{Slt:1-Ax:T}Mtr.DMOV")
+            }
+        }
+        else return
+    }
+}'
+#
+# macromotor 'fsbmot' for FrontEnd Bottom slit
+#
+def fsbmot_cmd(mne, key, p1) '{
+    local fs_off, ptemp, pm
+    fs_off = -0.330
+    if (key == "set_position") {  ### do not set position with spec
+        return
+    }
+    if (key == "position") {     ### read position
+        if (mne == fsb) {
+            ptemp = epics_get("FE:C10A-OP{Slt:2-Ax:B}Mtr.VAL") - fs_off
+            return(ptemp)}
+        else return(0)
+    }
+    if (key == "start_one") {     ### move to preset position
+        if (mne == fsb) {
+            ptemp = p1 + fs_off
+            epics_put("FE:C10A-OP{Slt:2-Ax:B}Mtr.VAL", ptemp)
+            pm = epics_get("FE:C10A-OP{Slt:2-Ax:B}Mtr.DMOV")
+            for (i=0; i<30 && pm <1; i++) {
+               	sleep(0.1)
+	        pm = epics_get("FE:C10A-OP{Slt:2-Ax:B}Mtr.DMOV")
+       	    }
+        }
+        else return
+    }
+}'
+#
+# macromotor 'fsomot' for FrontEnd Bottom slit
+#
+def fsomot_cmd(mne, key, p1) '{
+    local fs_off, ptemp, pm
+    fs_off = 0.05
+    if (key == "set_position") {  ### do not set position with spec
+        return
+    }
+    if (key == "position") {     ### read position
+        if (mne == fso) {
+            ptemp = epics_get("FE:C10A-OP{Slt:1-Ax:O}Mtr.VAL") - fs_off
+            return(ptemp)}
+        else return(0)
+    }
+    if (key == "start_one") {     ### move to preset position
+        if (mne == fso) {
+            ptemp = p1 + fs_off
+            epics_put("FE:C10A-OP{Slt:1-Ax:O}Mtr.VAL", ptemp)
+            pm = epics_get("FE:C10A-OP{Slt:1-Ax:O}Mtr.DMOV")
+            for (i=0; i<30 && pm <1; i++) {
+               	sleep(0.1)
+		pm = epics_get("FE:C10A-OP{Slt:1-Ax:O}Mtr.DMOV")
+       	    }
+        }
+        else return
+    }
+}'
+#
+# macromotor 'fsimot' for FrontEnd Bottom slit
+#
+def fsimot_cmd(mne, key, p1) '{
+    local fs_off, ptemp, pm
+    fs_off = -1.9898
+    if (key == "set_position") {  ### do not set position with spec
+        return
+    }
+    if (key == "position") {     ### read position
+        if (mne == fsi) {
+            ptemp = epics_get("FE:C10A-OP{Slt:2-Ax:I}Mtr.VAL") - fs_off
+            return(ptemp)}
+        else return(0)
+    }
+    if (key == "start_one") {     ### move to preset position
+        if (mne == fsi) {
+            ptemp = p1 + fs_off
+            epics_put("FE:C10A-OP{Slt:2-Ax:I}Mtr.VAL", ptemp)
+            pm = epics_get("FE:C10A-OP{Slt:2-Ax:I}Mtr.DMOV")
+            for (i=0; i<30 && pm <1; i++) {
+               	sleep(0.1)
+		pm = epics_get("FE:C10A-OP{Slt:2-Ax:I}Mtr.DMOV")
+       	    }
+        }
+        else return
+    }
+}'
+#
+# macromotor 'mcmxmot' for MCM
+#
+def mcmxmot_cmd(mne, key, p1) '{
+    local array am[6]
+    local pm, sm, fm, cn, nj
+    nj = 30
+    #print key
+    if (key == "set_position") {  ### do not set position with spec
+        return
+    }
+    if (key == "position") {     ### read position
+        if (mne == mcmx) {
+            pm = epics_get("XF:10IDD-OP{MCM:1-Ax:X}Mtr")
+            return(pm)}
+        else return(0)
+    }
+    if (key == "start_one") {     ### move to preset position
+        if (mne == mcmx) {
+            pm = A[mne]
+            epics_put("XF:10IDD-OP{MCM:1-Ax:X}Mtr",pm)
+	    sleep(0.1)
+            epics_put("XF:10IDD-OP{MCM:1}Mov",1)
+	    sleep(0.3)
+	    am = epics_get("XF:10IDD-OP{MCM:1}Mtr_InPos")
+	    fm = 1
+	    for (j = 0; j < nj && fm > 0; j++) {
+	        sm = 0
+		cn = j
+	        for (i = 0; i < 6; i++) {
+	            sm += am[i]
+                }
+	        if (sm < 6) {
+		    sleep(0.3)
+		    #epics_put("XF:10IDD-OP{MCM:1}Kill",1)
+		    #epics_put("XF:10IDD-OP{MCM:1}Mov",1)
+		}
+		else fm = 0
+            }
+	    #if (cn == 59) print "Target is not reached"
+        }
+        else return
+    }
+}'
+#
+# macromotor 'mcmy' for MCM
+#
+def mcmymot_cmd(mne, key, p1) '{
+    local array am[6]
+    local pm, sm, fm, cn, nj
+    nj = 30
+    if (key == "set_position") {  ### do not set position with spec
+        return
+    }
+    if (key == "position") {     ### read position
+        if (mne == mcmy) {
+            pm = epics_get("XF:10IDD-OP{MCM:1-Ax:Y}Mtr")
+            return(pm)}
+        else return(0)
+    }
+    if (key == "start_one") {     ### move to preset position
+        if (mne == mcmy) {
+            pm = A[mne]
+            epics_put("XF:10IDD-OP{MCM:1-Ax:Y}Mtr",pm)
+	    sleep(0.1)
+            epics_put("XF:10IDD-OP{MCM:1}Mov",1)
+	    sleep(0.3)
+            am = epics_get("XF:10IDD-OP{MCM:1}Mtr_InPos")
+            fm = 1
+            for (j = 0; j < nj && fm > 0; j++) {
+                sm = 0
+                cn = j
+                for (i = 0; i < 6; i++) {
+                    sm += am[i]
+                }
+                if (sm < 6) {
+		    sleep(0.3)
+		    #epics_put("XF:10IDD-OP{MCM:1}Kill",1)
+		    #epics_put("XF:10IDD-OP{MCM:1}Mov",1)
+		    }
+                else fm = 0
+            }
+            #if (cn == 59) print "Target is not reached"
+        }
+        else return
+    }
+}'
+#
+# macromotor 'mcmz' for MCM
+#
+def mcmzmot_cmd(mne, key, p1) '{
+    local array am[6]
+    local pm, sm, fm, cn, nj
+    nj = 30
+    if (key == "set_position") {  ### do not set position with spec
+        return
+    }
+    if (key == "position") {     ### read position
+        if (mne == mcmz) {
+            pm = epics_get("XF:10IDD-OP{MCM:1-Ax:Z}Mtr")
+            return(pm)}
+        else return(0)
+    }
+    if (key == "start_one") {     ### move to preset position
+        if (mne == mcmz) {
+            pm = A[mne]
+            epics_put("XF:10IDD-OP{MCM:1-Ax:Z}Mtr",pm)
+	    sleep(0.1)
+            epics_put("XF:10IDD-OP{MCM:1}Mov",1)
+	    sleep(0.3)
+            am = epics_get("XF:10IDD-OP{MCM:1}Mtr_InPos")
+            fm = 1
+            for (j = 0; j < nj && fm > 0; j++) {
+                sm = 0
+                cn = j
+                for (i = 0; i < 6; i++) {
+                    sm += am[i]
+                }
+                if (sm < 6) sleep(0.2)
+                else fm = 0
+            }
+            #if (cn == 59) print "Target is not reached"
+        }
+        else return
+    }
+}'
+#
+# macromotor 'mcmthe' for MCM
+#
+def mcmthemot_cmd(mne, key, p1) '{
+    local array am[6]
+    local pm, sm, fm, cn, nj
+    nj = 30
+    if (key == "set_position") {  ### do not set position with spec
+        return
+    }
+    if (key == "position") {     ### read position
+        if (mne == mcmthe) {
+            pm = epics_get("XF:10IDD-OP{MCM:1-Ax:Rx}Mtr")
+            return(pm)}
+        else return(0)
+    }
+    if (key == "start_one") {     ### move to preset position
+        if (mne == mcmthe) {
+            pm = A[mne]
+            epics_put("XF:10IDD-OP{MCM:1-Ax:Rx}Mtr",pm)
+	    sleep(0.1)
+            epics_put("XF:10IDD-OP{MCM:1}Mov",1)
+	    sleep(0.3)
+            am = epics_get("XF:10IDD-OP{MCM:1}Mtr_InPos")
+            fm = 1
+            for (j = 0; j < nj && fm > 0; j++) {
+                sm = 0
+                cn = j
+                for (i = 0; i < 6; i++) {
+                    sm += am[i]
+                }
+                if (sm < 6) sleep(0.2)
+                else fm = 0
+            }
+            #if (cn == 59) print "Target is not reached"
+        }
+        else return
+    }
+}'
+#
+# macromotor 'mcmphi' for MCM
+#
+def mcmphimot_cmd(mne, key, p1) '{
+    local array am[6]
+    local pm, sm, fm, cn, nj
+    nj = 30
+    if (key == "set_position") {  ### do not set position with spec
+        return
+    }
+    if (key == "position") {     ### read position
+        if (mne == mcmphi) {
+            pm = epics_get("XF:10IDD-OP{MCM:1-Ax:Ry}Mtr")
+            return(pm)}
+        else return(0)
+    }
+    if (key == "start_one") {     ### move to preset position
+        if (mne == mcmphi) {
+            pm = A[mne]
+            epics_put("XF:10IDD-OP{MCM:1-Ax:Ry}Mtr",pm)
+	    sleep(0.1)
+            epics_put("XF:10IDD-OP{MCM:1}Mov",1)
+	    sleep(0.3)
+            am = epics_get("XF:10IDD-OP{MCM:1}Mtr_InPos")
+            fm = 1
+            for (j = 0; j < 60 && fm > 0; j++) {
+                sm = 0
+                cn = j
+                for (i = 0; i < 6; i++) {
+                    sm += am[i]
+                }
+                if (sm < 6) sleep(0.2)
+                else fm = 0
+            }
+            #if (cn == 59) print "Target is not reached"
+        }
+        else return
+    }
+}'
+#
+# macromotor 'mcmchi' for MCM
+#
+def mcmchimot_cmd(mne, key, p1) '{
+    local array am[6]
+    local pm, sm, fm, cn, nj
+    nj = 30
+    if (key == "set_position") {  ### do not set position with spec
+        return
+    }
+    if (key == "position") {     ### read position
+        if (mne == mcmchi) {
+            pm = epics_get("XF:10IDD-OP{MCM:1-Ax:Rz}Mtr")
+            return(pm)}
+        else return(0)
+    }
+    if (key == "start_one") {     ### move to preset position
+        if (mne == mcmchi) {
+            pm = A[mne]
+            epics_put("XF:10IDD-OP{MCM:1-Ax:Rz}Mtr",pm)
+	    sleep(0.1)
+            epics_put("XF:10IDD-OP{MCM:1}Mov",1)
+	    sleep(0.3)
+            am = epics_get("XF:10IDD-OP{MCM:1}Mtr_InPos")
+            fm = 1
+            for (j = 0; j < nj && fm > 0; j++) {
+                sm = 0
+                cn = j
+                for (i = 0; i < 6; i++) {
+                    sm += am[i]
+                }
+                if (sm < 6) sleep(0.2)
+                else fm = 0
+            }
+            #if (cn == 59) print "Target is not reached"
+        }
+        else return
+    }
+}'
+#
+# calculation of motor position variations
+def motor_var '{
+    local c, d, Nmax
+    local array min[97], max[97], mp[97][300]
+    #
+    # create 2D array of motor positions
+    Nmax = 300
+    read_motors(0)
+    for (i=0; i<Nmax; i++) {
+        read_motors(0)
+	for (j=0; j<MOTORS; j++) {
+	    mp[j][i] = A[j]
+	}
+	#print i, mp[12][i]
+	sleep(1)
+    }
+    #
+    # calculate min value for each motor
+    #print "Min calculation:"
+    for (i=0; i<MOTORS; i++) {
+        c = 1000000.
+        for (j=0; j<Nmax; j++) {
+	    if (mp[i][j] < c) c = mp[i][j]
+	}
+	min[i] = c
+	#print i, c
+    }
+    #
+    # calculate max value for each motor
+    #print "Max calculation:"
+    for (i=0; i<MOTORS; i++) {
+        c = -1000000.
+        for (j=0; j<Nmax; j++) {
+	    if (mp[i][j] > c) c = mp[i][j]
+	}
+	max[i] = c
+	#print i, c
+    }
+    for (i=0; i<MOTORS; i++) {
+        c = max[i] - min[i]
+	d = c*motor_par(i,"step_size")
+        print i, motor_mne(i), c, d
+    }
+}'
+#
+# macromotor "acth" sets the C crystal angle
+# macromotor "acyy" sets the vertical position
+#
+def ancthe_config(mne, type, unit, module, chan) '{
+    if (type == "mot") {
+        return "anuy andy"
+    }
+}'
+#
+def ancthe_calc(mne, mode) '{
+    local th0
+    array yy[2]
+    #th0 = 0.67344834
+    th0 = 38.5857476
+    if (mode == 0) {
+        yy = cthdir(A[anuy],A[andy])
+        if (mne == acth) A[mne] = yy[0]-th0
+	if (mne == acyy) A[mne] = yy[1]
+    } else {
+        yy = cthinv(th0+A[acth],A[acyy])
+        if (mne == anuy) A[mne] = yy[0]
+        if (mne == andy) A[mne] = yy[1]
+    }
+}'
+#
+# calculates angle for the C crystal from two motors "a2uy" and "a2dy"
+def cthdir(d1y,d2y) '{
+    array ccp[2]
+    local A0y, A0z, B0y, B0z, C0y, C0z, th0
+    local any, anz, a1, a2, bny, bnz, b2, cny, cnz
+    local cy, cz, c1, c2, dn, d1, d2, hn, h2
+    A0y = 1.21523
+    A0z = 7.20726
+    B0y = 3.08561
+    B0z = 6.57882
+    C0y = 0.36531
+    C0z = 3.16942
+    any = 0.84992 + 0.01*(d2y - d1y)
+    anz = 4.03784
+    a2 = any*any + anz*anz
+    bny = 1.87038
+    bnz = -0.62844
+    b2 = bny*bny + bnz*bnz
+    cny = 2.72030
+    cnz = 3.40940
+    c2 = cny*cny + cnz*cnz
+    c1 = sqrt(c2)
+    d2 = B0y*B0y + B0z*B0z
+    dn = sqrt(d2)
+    h2 = C0y*C0y + C0z*C0z
+    hn = sqrt(h2)
+    a1 = (c2 + a2 - b2)/2.
+    d1 = anz*sqrt(a2*c2 - a1*a1)
+    cy = (a1*any + d1)/a2
+    cz = sqrt(c2 - cy*cy)
+    #
+    # crystal angle (rad)
+    ccp[0] = deg(asin(cy/c1))
+    #
+    a2 = (c2 + h2 - d2)/2.
+    d2 = cz*sqrt(c2*h2 - a2*a2)
+    hy = (a2*cy + d2)/c2
+    #
+    # crystal y-position
+    ccp[1] = 100.*(C0y + 0.01*d1y + hy)
+    return ccp
+}'
+#
+#
+# calculates positions of the motors "anuy" and "andy" from C crystal angle
+def cthinv(cth,ccy) '{
+    array ddy[2]
+    local A0y, A0z, B0y, B0z, C0y, C0z, th0
+    local anx, any, a1, a2, bnx, bny, b2, cnx, cny
+    local c1, c2, dn, d1, d2, hn, hy, h2, cy, cz
+    local y1, y2
+    A0y = 1.21523
+    A0z = 7.20726
+    B0y = 3.08561
+    B0z = 6.57882
+    C0y = 0.36531
+    C0z = 3.16942
+    any = 0.84992
+    anz = 4.03784
+    bny = 1.87038
+    bnz = -0.62844
+    b2 = bny*bny + bnz*bnz
+    cny = 2.72030
+    cnz = 3.40940
+    c2 = cny*cny + cnz*cnz
+    c1 = sqrt(c2)
+    d2 = B0y*B0y + B0z*B0z
+    dn = sqrt(d2)
+    h2 = C0y*C0y + C0z*C0z
+    hn = sqrt(h2)
+    #
+    cy = c1*sin(rad(cth))
+    cz = sqrt(c2 - cy*cy)
+    a1 = (c2 + h2 -d2)/2.
+    d1 = cz*sqrt(c2*h2 - a1*a1)
+    hy = (a1*cy + d1)/c2
+    #
+    # first motor position (mm)
+    y1 = 0.01*ccy - hy - C0y
+    ddy[0] = 100.*y1
+    #
+    a2 = anz*anz + c2 - b2 - 2*anz*cz
+    d2 = sqrt(cy*cy - a2)
+    #
+    # second motor position (mm)
+    y2 = C0y + y1 + cy - d2 - A0y
+    ddy[1] = 100.*y2
+    return ddy
+}'
+#
+# macromotor "adth" sets the coarse angle of D crystal
+# macromotor "adyy" sets the coarse vertical position
+#
+def andthe_config(mne, type, unit, module, chan) '{
+    if (type == "mot") {
+        return "anay anby"
+    }
+}'
+#
+def andthe_calc(mne, mode) '{
+    local d0, th0
+    array yy[2]
+    th0 = 0.0
+    if (mode == 0) {
+        yy = dthdir(A[anay],A[anby])
+        if (mne == adth) A[mne] = yy[0]-th0
+        if (mne == adyy) A[mne] = yy[1]
+    } else {
+        yy = dthinv(th0+A[adth],A[adyy])
+        if (mne == anay) A[mne] = yy[0]
+        if (mne == anby) A[mne] = yy[1]
+    }
+}'
+#
+# calculates angle and position from the motors
+def dthdir(p1,p2) '{
+    local d0
+    array pp[2]
+    pp[1] = (p1 + p2)/2.0
+    d0 = asin((p2 - p1)/175.0)
+    pp[0] = deg(d0)
+    return pp
+}'
+#
+# calculates motors from the angle and position
+def dthinv(p1,p2) '{
+    local d0
+    array pp[2]
+    d0 = 175.0*sin(rad(p1))
+    pp[0] = p2 - d0/2.0
+    pp[1] = p2 + d0/2.0
+    return pp
+}'
+#
+#
+# macromotor 'mcms2imot' for MCM inboard slit #2
+#
+def mcms2imot_cmd(mne, key, p1) '{
+    local n1, d1, d2, d3, r1, rmp, pmp, pm
+    r1 = 0.817
+    d1 = 3.830
+    d2 = 4.369
+    n1 = 10240.0
+    d3 = (d2 - d1)/2.0 + r1
+    if (key == "set_position") {  ### do not set position with spec
+        return
+    }
+    if (key == "position") {     ### read position
+        if (mne == mcms2i) {
+            rmp = epics_get("XF:10IDD-OP{Ez4:7-Ax:1}Mtr.RBV")
+            pmp = -r1*(1.0 - cos(PI*rmp/n1)) + d3
+	    #p "s2i", pmp
+            return(pmp)}
+        else return(0)
+    }
+    if (key == "start_one") {     ### move to preset position
+        if (mne == mcms2i) {
+            if (p1 > 1. || p1 < -0.5) {
+                p "Position is out of range"
+                return}
+            rmp = n1*acos(1.0 + (p1 - d3)/r1)/PI
+            epics_put("XF:10IDD-OP{Ez4:7-Ax:1}Mtr.VAL", rmp)
+            pm = epics_get("XF:10IDD-OP{Ez4:7-Ax:1}Mtr.DMOV")
+            for (i=0; i<30 && pm <1; i++) {
+                sleep(0.2)
+                pm = epics_get("XF:10IDD-OP{Ez4:7-Ax:1}Mtr.DMOV")
+            }
+        }
+        else return
+    }
+}'
+#
+#
+# macromotor 'mcms2omot' for MCM outboard slit #2
+#
+def mcms2omot_cmd(mne, key, p1) '{
+    local n1, d1, d2, d3, r1, rmp, pmp, pm
+    r1 = 0.817
+    d1 = 3.830
+    d2 = 4.369
+    n1 = 10240.0
+    d3 = (d2 - d1)/2.0 + r1
+    if (key == "set_position") {  ### do not set position with spec
+        return
+    }
+    if (key == "position") {     ### read position
+        if (mne == mcms2o) {
+            rmp = epics_get("XF:10IDD-OP{Ez4:7-Ax:2}Mtr.RBV")
+            pmp	= r1*(1.0 - cos(PI*rmp/n1)) - d3
+	    #p "s2o", pmp
+            return(pmp)}
+        else return(0)
+    }
+    if (key == "start_one") {     ### move to preset position
+        if (mne == mcms2o) {
+	    if (p1 < -1.0 || p1 > 0.5) {
+	        p "Position is out of range"
+		return
+	    }
+            rmp = n1*acos(1.0 - (p1 + d3)/r1)/PI
+            epics_put("XF:10IDD-OP{Ez4:7-Ax:2}Mtr.VAL", rmp)
+            pm = epics_get("XF:10IDD-OP{Ez4:7-Ax:2}Mtr.DMOV")
+            for (i=0; i<30 && pm <1; i++) {
+                sleep(0.2)
+                pm = epics_get("XF:10IDD-OP{Ez4:7-Ax:2}Mtr.DMOV")
+            }
+        }
+        else return
+    }
+}'
+#
+# macromotor 'tthpm' for analyzer arm
+#
+def tthpmot_cmd(mne, key, p1) '{
+    local am, pm, a1, a2, a3, nj
+    nj = 120
+    if (key == "set_position") {  ### do not set position with spec
+        return
+    }
+    if (key == "position") {     ### read position
+        if (mne == tthpm) {
+            pm = epics_get("XF:10IDD-OP{Spec:1-Ax:2Th}Mtr.RBV")
+            return(pm)}
+        else return(0)
+    }
+    if (key == "start_one") {     ### move to preset position
+        if (mne == tthpm) {
+	    a1 = epics_get("XF:10IDD-CT{MC:11}Out:GPIO-Sel.BF")
+	    if (a1 == 0) epics_put("XF:10IDD-CT{IOC-MC:11}AirOn-cmd",1)
+	    a2 = epics_get("XF:10IDD-CT{MC:12}Out:GPIO-Sel.BF")
+	    if (a1 == 0) epics_put("XF:10IDD-CT{IOC-MC:12}AirOn-cmd",1)
+	    a3 = epics_get("XF:10IDD-CT{MC:12}Out:GPIO-Sel.BE")
+	    if (a3 == 0) epics_put("XF:10IDD-CT{IOC-MC:12}BrakeOn-cmd",1)
+            pm = A[mne]
+            epics_put("XF:10IDD-OP{Spec:1-Ax:2Th}Mtr.VAL",pm)
+            sleep(0.5)
+            am = epics_get("XF:10IDD-OP{Spec:1-Ax:2Th}Mtr.DMOV")
+            while (am < 1) {
+                sleep(1.0)
+		pm = epics_get("XF:10IDD-OP{Spec:1-Ax:2Th}Mtr.RBV")
+		printf("moving... %.4g\r",pm)
+                am = epics_get("XF:10IDD-OP{Spec:1-Ax:2Th}Mtr.DMOV")
+            }
+	    epics_put("XF:10IDD-CT{IOC-MC:11}AirOn-cmd",0)
+	    epics_put("XF:10IDD-CT{IOC-MC:12}AirOn-cmd",0)
+	    epics_put("XF:10IDD-CT{IOC-MC:12}BrakeOn-cmd",0)
+        }
+        else return
+    }
+}'
+#
+#
+# macromotor 'hrmE' converts the HRM angle into energy
+#
+def hrmEscan_config(mne, type, unit, module, chan) '{
+    if (type == "mot") {
+        return "huof hdof"
+    }
+}'
+def hrmEscan_calc(mne, mode) '{
+    local an, TB, EB
+    TB = 69.2943
+    EB = 9.1317
+    if (mode == 0) {
+        if (mne == hrmE) {
+	    #p 9.1317*A[huof]/tan(rad(69.2943))
+            A[mne] = -EB*A[huof]/tan(rad(TB))
+	}
+    }
+    else {
+        an = -A[hrmE]*tan(rad(TB))/EB
+	#p an
+        if (mne == huof)
+            A[mne] = an
+        if (mne == hdof)
+            A[mne] = an
+    }
+}'
+#
+# HRM in-beam
+#
+def hrmin '{
+    umv hux 0 hdx 0 hbs 2
+}'
+#
+# HRM out-of-beam
+def hrmout '{
+    umv hux -20 hdx -20 hbs -1
+}'
+#
+# X-Ray Eye Intensity avarage
+#
+def camint(n) '{
+    local Tacq, Int, Isum
+    Isum = 0
+    Tacq = epics_get("XF:10IDD-BI{OnAxis-Cam:1}cam1:AcquirePeriod")
+    for (i=0; i<n; i++) {
+        Int = epics_get("XF:10IDD-BI{OnAxis-Cam:1}Stats1:MaxValue_RBV")
+	Isum += Int
+	sleep(Tacq)
+    }
+    return Isum/n
+}'
+#
+# sets the Tagma det time
+def tdtime(t) '{
+    epics_put("det1.TP",t)
+    epics_put("det1.TP1",t)
+}'
+#
+#automatic alignment of the HRM
+#
+def hrm_setup '{
+    # check the SR current
+    Isr = epics_get("SR:C03-BI{DCCT:1}I:Real-I")
+    if (Isr < 100.) {
+       p "SR current is low"
+       p "Execution is terminated"
+       exit
+   }
+#
+  # set parameters of the detectors
+    epics_put("XF10ID-BI:AH174:AcquireMode",0)
+    epics_put("XF10ID-BI:AH174:Range",0)
+    epics_put("XF10ID-BI:AH174:AveragingTime",0.5)
+    epics_put("XF10ID-BI:AH174:Acquire",1)
+    epics_put("XF10ID-BI:AH175:AcquireMode",0)
+    epics_put("XF10ID-BI:AH175:Range",1)
+    epics_put("XF10ID-BI:AH175:AveragingTime",0.5)
+    epics_put("XF10ID-BI:AH175:Acquire",1)
+#
+  # check HRM position
+    p1 = epics_get("XF:10IDB-OP{Mono:HRM2-Ax:UX}Mtr.RBV")
+    p2 = epics_get("XF:10IDB-OP{Mono:HRM2-Ax:DX}Mtr.RBV")
+    if (p1!=0.) eval("umv hux 0")
+    if (p2!=0.) eval("umv hdx 0")
+#
+  # move out d1
+    umv hpd1 0
+#
+  # set slits S1
+    umv s1t 1 s1b -1 s1o 1 s1i -1
+#
+  # move in all others
+    umv hpd2 1 hpd4 1
+    umv hpd3 1 hpd5 1
+    umv hbs 2
+#
+  # first crystal scan
+    plotselect d42
+    dscan huth -0.05 0.05 50 1
+    if (fabs(pl_COM-CEN)/pl_FWHM > 0.3) {
+       p "1st crystal peak is not found"
+       p "Execution is terminated"
+       exit
+    }
+    umv huth CEN
+    umv hpd2 0
+#
+  # 2nd crystal scan
+    plotselect d43
+    dscan huif -80 80 50 1
+    if (fabs(pl_COM-CEN)/pl_FWHM > 0.3) {
+       p "2nd crystal peak is not found"
+       p "Execution is terminated"
+       exit
+    }
+    umv huif CEN
+    umv hpd3 0
+#
+  # 3rd crystal scan
+    plotselect d44
+    dscan hdth -0.01 0.01 50 1
+    if (fabs(pl_COM-CEN)/pl_FWHM > 0.3) {
+       p "3rd crystal peak is not found"
+       p "Execution is terminated"
+       exit
+    }
+    umv hdth CEN
+    umv hpd4 0
+#
+  # 4th crystal scan
+    plotselect d51
+    dscan hdif -80 80 50 1
+    if (fabs(pl_COM-CEN)/pl_FWHM > 0.3) {
+       p "4th crystal peak is not found"
+       p "Execution is terminated"
+       exit
+    }
+    umv hdif CEN
+    umv hpd5 0
+#
+    p "HRM alignment is completed"
+}'
