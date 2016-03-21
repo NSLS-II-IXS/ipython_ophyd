@@ -200,19 +200,18 @@ class AnalyzerCXtal(PseudoPositioner):
         d1y = self.uy.position
         d2y = self.dy.position
 
-        any = 0.84992 + 0.01*(d2y - d1y)
-        a2 = any*any + anz*anz
+        _any = 0.84992 + 0.01*(d2y - d1y)
+        a2 = _any*_any + anz*anz
         a1 = (c2 + a2 - b2)/2.
         d1 = anz*np.sqrt(a2*c2 - a1*a1)
-        cy = (a1*any + d1)/a2
+        cy = (a1*_any + d1)/a2
         cz = np.sqrt(c2 - cy*cy)
         #
         # crystal angle (rad)
-        ccp[0] = np.deg2rad(np.arcsin(cy/c1))
-        # how to handle negative sqrts here??
-        d2 = cz*np.sqrt(c2*h2 - a2*a2)
+        ccp[0] = np.rad2deg(np.arcsin(cy/c1))
         a2 = (c2 + h2 - d2)/2.
-        hy = (a2*cy + d2)/c2
+        _d2 = cz*np.sqrt(c2*h2 - a2*a2)
+        hy = (a2*cy + _d2)/c2
         #
         # crystal y-position
         ccp[1] = 100.*(C0y + 0.01*d1y + hy)
