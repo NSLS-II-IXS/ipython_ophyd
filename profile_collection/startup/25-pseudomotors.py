@@ -5,7 +5,7 @@ import numpy as np
 from scipy import interpolate
 
 
-_Gm = [ 6184.0,
+_ivu_gap = [ 6184.0,
        6368.0,
        6550.0,
        6730.0,
@@ -34,7 +34,7 @@ _Gm = [ 6184.0,
        10960.0,
        11385.0]
 
-_Tm = [ 16.401781,
+_Bragg = [ 16.401781,
        15.821071,
        15.280587,
        14.776273,
@@ -63,7 +63,7 @@ _Tm = [ 16.401781,
        8.41915,
        8.11645 ]
 
-gcalc = interpolate.interp1d(_Gm, _Tm)
+gcalc = interpolate.interp1d(_Bragg, _ivu_gap)
 
 _hc = 12398.4193
 _si_111 = 3.1363
