@@ -1,5 +1,6 @@
 from ophyd import (Device, EpicsSignal, EpicsSignalRO,
-                   EpicsMotor, PVPositioner, Component as Cpt)
+                   EpicsMotor, PVPositioner, Component as Cpt,
+                   FormattedComponent as FCpt)
 
 
 # SR current
@@ -18,6 +19,17 @@ class FESlits(Device):
     outboard = Cpt(EpicsMotor, '1-Ax:O}Mtr')
     inboard = Cpt(EpicsMotor, '2-Ax:I}Mtr')
 
+    hgap = FCpt(EpicsSignal, 'FE:C10A-OP{Slt:12-Ax:X}size.VAL', add_prefix=())
+    hoff = FCpt(EpicsSignal, 'FE:C10A-OP{Slt:12-Ax:X}center.VAL', add_prefix=())
+    vgap = FCpt(EpicsSignal, 'FE:C10A-OP{Slt:12-Ax:Y}size.VAL', add_prefix=())
+    voff = FCpt(EpicsSignal, 'FE:C10A-OP{Slt:12-Ax:Y}center.VAL', add_prefix=())
+    stop_all = FCpt(EpicsSignal, 'FE:C10A-CT{MC:1}allstop.VAL', add_prefix=())
+
+
+    def stop(self):
+        self.stop_all.put(1)
+        super().stop()
+
 
 # TODO: revisit the IVU as a PseudoPositioner
 class Undulator(PVPositioner):
@@ -26,10 +38,11 @@ class Undulator(PVPositioner):
     # This should be fixed at the EPICS level to provide an avg gap
     readback = Cpt(EpicsSignalRO, '}Y1:Rbv')
     actuate = Cpt(EpicsSignal, '}ManG:Go_.PROC')
-    actuate_value = 1
     done = Cpt(EpicsSignalRO, '-Mtr:Gap}.DMOV')
-    done_value = 1
     stop_signal = Cpt(EpicsSignal, '}Man:Stop_.PROC')
+
+    actuate_value = 1
+    done_value = 1
     stop_value = 1
 
 
