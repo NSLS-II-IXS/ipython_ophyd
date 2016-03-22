@@ -1,6 +1,6 @@
 from ophyd import (Device, EpicsSignal, EpicsSignalRO,
-                   EpicsMotor, PVPositioner, Component as Cpt,
-                   FormattedComponent as FCpt)
+                   EpicsMotor, PVPositioner, PVPositionerPC,
+                   Component as Cpt)
 
 
 # SR current
@@ -13,22 +13,38 @@ class CRL(Device):
     th =Cpt(EpicsMotor, '-Ax:P}Mtr')
 
 
-class FESlits(Device):
+class Slit2DGap(PVPositionerPC):
+    readback = Cpt(EpicsSignalRO, 't2.C')
+    setpoint = Cpt(EpicsSignal, 'size')
+    done = Cpt(EpicsSignalRO, 'DMOV')
+    done_value = 1
+
+
+class Slit2DCenter(PVPositionerPC):
+    readback = Cpt(EpicsSignalRO, 't2.D')
+    setpoint = Cpt(EpicsSignal, 'center')
+    done = Cpt(EpicsSignalRO, 'DMOV')
+    done_value = 1
+
+
+class Slit2D(Device):
+    "Center and gap with virtual motors"
+    xc = Cpt(Slit2DCenter, '12-Ax:X}')
+    yc = Cpt(Slit2DCenter, '12-Ax:Y}')
+    xg = Cpt(Slit2DGap, '12-Ax:X}')
+    yg = Cpt(Slit2DGap, '12-Ax:Y}')
+
+
+class Slit2DBlades(Device):
     top = Cpt(EpicsMotor, '1-Ax:T}Mtr')
     bottom = Cpt(EpicsMotor, '2-Ax:B}Mtr')
     outboard = Cpt(EpicsMotor, '1-Ax:O}Mtr')
     inboard = Cpt(EpicsMotor, '2-Ax:I}Mtr')
 
-    hgap = FCpt(EpicsSignal, 'FE:C10A-OP{Slt:12-Ax:X}size.VAL', add_prefix=())
-    hoff = FCpt(EpicsSignal, 'FE:C10A-OP{Slt:12-Ax:X}center.VAL', add_prefix=())
-    vgap = FCpt(EpicsSignal, 'FE:C10A-OP{Slt:12-Ax:Y}size.VAL', add_prefix=())
-    voff = FCpt(EpicsSignal, 'FE:C10A-OP{Slt:12-Ax:Y}center.VAL', add_prefix=())
-    stop_all = FCpt(EpicsSignal, 'FE:C10A-CT{MC:1}allstop.VAL', add_prefix=())
 
-
-    def stop(self):
-        self.stop_all.put(1)
-        super().stop()
+class FESlits(Slit2DBlades, Slit2D):
+    "combine t b i o and xc yc xg yg"
+    pass
 
 
 # TODO: revisit the IVU as a PseudoPositioner
