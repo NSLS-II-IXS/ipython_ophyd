@@ -91,7 +91,7 @@ class MCMBase(PVPositioner):
     stop_signal = Cpt(EpicsSignal, '}Kill')
     stop_value = 1
     # all six axes are coupled, so 'InPos' is an array of six values
-    done = Cpt(EpicsSignal, '}Mtr_InPos')
+    done = Cpt(EpicsSignal, '}InPos')
     done_value = True
 
     def __init__(self, prefix, ch_name=None, **kwargs):
