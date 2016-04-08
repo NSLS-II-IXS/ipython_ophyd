@@ -162,8 +162,8 @@ hn = np.sqrt(h2)
 
 
 class AnalyzerCXtal(PseudoPositioner):
-    theta  = Cpt(PseudoSingle, egu='deg')
-    height = Cpt(PseudoSingle, egu='mm')
+    the  = Cpt(PseudoSingle, egu='deg')
+    y = Cpt(PseudoSingle, egu='mm')
 
     uy = Cpt(EpicsMotor, 'XF:10IDD-OP{Analy:1-Ax:UY}Mtr')
     dy = Cpt(EpicsMotor, 'XF:10IDD-OP{Analy:1-Ax:DY}Mtr')
@@ -171,14 +171,12 @@ class AnalyzerCXtal(PseudoPositioner):
     @pseudo_position_argument
     def forward(self, pseudopos):
         ddy = np.zeros((2,), dtype=float)
-        cth = pseudopos.theta + th0
-        ccy = pseudopos.height
+        cth = pseudopos.the + th0
+        ccy = pseudopos.y
 
         cy = c1*np.sin(np.deg2rad(cth))
         cz = np.sqrt(c2 - cy*cy)
-        a2 = anz*anz + c2 - b2 - 2*anz*cz
-        d2 = np.sqrt(cy*cy - a2)
-        a1 = (c2 + h2 -d2)/2.
+        a1 = (c2 + h2 - d2)/2.
         d1 = cz*np.sqrt(c2*h2 - a1*a1)
         hy = (a1*cy + d1)/c2
         #
@@ -186,9 +184,11 @@ class AnalyzerCXtal(PseudoPositioner):
         y1 = 0.01*ccy - hy - C0y
         ddy[0] = 100.*y1
         #
+        a2 = anz*anz + c2 - b2 - 2*anz*cz
+        d3 = np.sqrt(cy*cy - a2)
         #
         # second motor position (mm)
-        y2 = C0y + y1 + cy - d2 - A0y
+        y2 = C0y + y1 + cy - d3 - A0y
         ddy[1] = 100.*y2
 
         return self.RealPosition(uy=ddy[0], dy=ddy[1])
@@ -216,7 +216,7 @@ class AnalyzerCXtal(PseudoPositioner):
         # crystal y-position
         ccp[1] = 100.*(C0y + 0.01*d1y + hy)
 
-        return self.PseudoPosition(theta=ccp[0]-th0, height=ccp[1])
+        return self.PseudoPosition(the=ccp[0]-th0, y=ccp[1])
 
 
 anc_xtal = AnalyzerCXtal('', name='anc_xtal', egu=('deg', 'mm'))
