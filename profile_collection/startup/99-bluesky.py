@@ -11,3 +11,5 @@ gs.RE.subscribe('start', olog_cb)
 from bluesky.scientific_callbacks import plot_peak_stats
 
 from bluesky.plans import *
+
+from bluesky.spec_api import ct, ascan, dscan
