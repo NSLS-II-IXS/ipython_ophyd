@@ -1,7 +1,9 @@
 from ophyd import (EpicsSignalRO, EpicsScaler, DetectorBase, SingleTrigger,
-                   Component as Cpt, Device, EpicsSignal)
+                   Component as Cpt, Device, EpicsSignal, DeviceStatus,
+                   ADComponent as ADCpt, Staged,
+                  )
 from ophyd.areadetector.cam import AreaDetectorCam
-from ophyd.areadetector import EpicsSignalWithRBV
+from ophyd.areadetector import EpicsSignalWithRBV, ImagePlugin
 
 
 class AH501(Device):
@@ -56,5 +58,45 @@ class QuadEM(DetectorBase):
     reset = Cpt(EpicsSignal, 'Reset')
 
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-ah501 = QuadEM('XF10ID-BI:AH175:', name='ah501')
+        self.stage_sigs.update([(self.acquire, 0), # if acquiring, stop
+                                (self.acquire_mode, 2) # single mode
+                               ])
+        self._status = None
+        self._acquisition_signal = self.acquire
+
+    def stage(self):
+        self._acquisition_signal.subscribe(self._acquire_changed)
+        super().stage()
+
+    def unstage(self):
+        super().unstage()
+        self._acquisition_signal.clear_sub(self._acquire_changed)
+
+    def trigger(self):
+        "Trigger one acquisition."
+        if self._staged != Staged.yes:
+            raise RuntimeError("This detector is not ready to trigger."
+                               "Call the stage() method before triggering.")
+
+        self._status = DeviceStatus(self)
+        self._acquisition_signal.put(1, wait=False)
+        #self.dispatch(self._image_name, ttime.time())
+        return self._status
+
+    def _acquire_changed(self, value=None, old_value=None, **kwargs):
+        "This is called when the 'acquire' signal changes."
+        if self._status is None:
+            return
+        if (old_value == 1) and (value == 0):
+            # Negative-going edge means an acquisition just finished.
+            self._status._finished()
+
+
+class AH501(QuadEM):
+    image = ADCpt(ImagePlugin, 'image1:')
+
+
+ah501 = AH501('XF10ID-BI:AH175:', name='ah501')
