@@ -3,7 +3,7 @@ from ophyd import (EpicsSignalRO, EpicsScaler, DetectorBase, SingleTrigger,
                    ADComponent as ADCpt, Staged,
                   )
 from ophyd.areadetector.cam import AreaDetectorCam
-from ophyd.areadetector import EpicsSignalWithRBV, ImagePlugin
+from ophyd.areadetector import EpicsSignalWithRBV, ImagePlugin, StatsPlugin
 
 
 class AH501(Device):
@@ -97,6 +97,13 @@ class QuadEM(DetectorBase):
 
 class AH501(QuadEM):
     image = ADCpt(ImagePlugin, 'image1:')
+    current1 = ADCpt(StatsPlugin, 'Current1:')
+    current2 = ADCpt(StatsPlugin, 'Current2:')
+    current3 = ADCpt(StatsPlugin, 'Current3:')
+    current4 = ADCpt(StatsPlugin, 'Current4:')
 
 
 ah501 = AH501('XF10ID-BI:AH175:', name='ah501')
+ah501.configuration_attrs = ['integration_time', 'averaging_time']
+ah501.read_attrs = ['current1.mean_value','current2.mean_value',
+                    'current3.mean_value','current4.mean_value']
