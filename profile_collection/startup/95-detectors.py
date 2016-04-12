@@ -6,21 +6,6 @@ from ophyd.areadetector.cam import AreaDetectorCam
 from ophyd.areadetector import EpicsSignalWithRBV, ImagePlugin, StatsPlugin
 
 
-class AH501(Device):
-    ch1 = Cpt(EpicsSignalRO, 'Current1:MeanValue_RBV')
-    ch2 = Cpt(EpicsSignalRO, 'Current2:MeanValue_RBV')
-    ch3 = Cpt(EpicsSignalRO, 'Current3:MeanValue_RBV')
-    ch4 = Cpt(EpicsSignalRO, 'Current4:MeanValue_RBV')
-
-
-det1 = AH501('XF10ID-BI:AH171:', name='det1')
-det2 = AH501('XF10ID-BI:AH172:', name='det2')
-det3 = AH501('XF10ID-BI:AH173:', name='det3')
-det4 = AH501('XF10ID-BI:AH174:', name='det4')
-det5 = AH501('XF10ID-BI:AH175:', name='det5')
-
-sclr = EpicsScaler('XF:10IDD-ES{Sclr:1}', name='sclr')
-
 
 class QuadEM(DetectorBase):
     model = Cpt(EpicsSignalRO, 'Model')
@@ -132,7 +117,16 @@ class AH501(QuadEM):
     current4 = ADCpt(StatsPlugin, 'Current4:')
 
 
-ah501 = AH501('XF10ID-BI:AH175:', name='ah501')
-ah501.configuration_attrs = ['integration_time', 'averaging_time']
-ah501.read_attrs = ['current1.mean_value','current2.mean_value',
-                    'current3.mean_value','current4.mean_value']
+
+det1 = AH501('XF10ID-BI:AH171:', name='det1')
+det2 = AH501('XF10ID-BI:AH172:', name='det2')
+det3 = AH501('XF10ID-BI:AH173:', name='det3')
+det4 = AH501('XF10ID-BI:AH174:', name='det4')
+det5 = AH501('XF10ID-BI:AH175:', name='det5')
+
+for det in [det1, det2, det3, det4, det5]:
+    det.configuration_attrs = ['integration_time', 'averaging_time']
+    det.read_attrs = ['current1.mean_value','current2.mean_value',
+                        'current3.mean_value','current4.mean_value']
+
+sclr = EpicsScaler('XF:10IDD-ES{Sclr:1}', name='sclr')
