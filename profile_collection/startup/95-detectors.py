@@ -1,13 +1,12 @@
 from ophyd import (EpicsSignalRO, EpicsScaler, DetectorBase, SingleTrigger,
                    Component as Cpt, Device, EpicsSignal, DeviceStatus,
-                   ADComponent as ADCpt, Staged,
-                  )
+                   ADComponent as ADCpt, Staged)
 from ophyd.areadetector.cam import AreaDetectorCam
-from ophyd.areadetector import EpicsSignalWithRBV, ImagePlugin, StatsPlugin
+from ophyd.areadetector import (EpicsSignalWithRBV, ImagePlugin, StatsPlugin,
+                                SingleTrigger)
 
 
-
-class QuadEM(DetectorBase):
+class QuadEM(SingleTrigger, DetectorBase):
     model = Cpt(EpicsSignalRO, 'Model')
     firmware = Cpt(EpicsSignalRO, 'Firmware')
 
@@ -78,35 +77,7 @@ class QuadEM(DetectorBase):
         self.stage_sigs.update([(self.acquire, 0), # if acquiring, stop
                                 (self.acquire_mode, 2) # single mode
                                ])
-        self._status = None
         self._acquisition_signal = self.acquire
-
-    def stage(self):
-        self._acquisition_signal.subscribe(self._acquire_changed)
-        super().stage()
-
-    def unstage(self):
-        super().unstage()
-        self._acquisition_signal.clear_sub(self._acquire_changed)
-
-    def trigger(self):
-        "Trigger one acquisition."
-        if self._staged != Staged.yes:
-            raise RuntimeError("This detector is not ready to trigger."
-                               "Call the stage() method before triggering.")
-
-        self._status = DeviceStatus(self)
-        self._acquisition_signal.put(1, wait=False)
-        #self.dispatch(self._image_name, ttime.time())
-        return self._status
-
-    def _acquire_changed(self, value=None, old_value=None, **kwargs):
-        "This is called when the 'acquire' signal changes."
-        if self._status is None:
-            return
-        if (old_value == 1) and (value == 0):
-            # Negative-going edge means an acquisition just finished.
-            self._status._finished()
 
 
 class AH501(QuadEM):
@@ -115,7 +86,6 @@ class AH501(QuadEM):
     current2 = ADCpt(StatsPlugin, 'Current2:')
     current3 = ADCpt(StatsPlugin, 'Current3:')
     current4 = ADCpt(StatsPlugin, 'Current4:')
-
 
 
 det1 = AH501('XF10ID-BI:AH171:', name='det1')
