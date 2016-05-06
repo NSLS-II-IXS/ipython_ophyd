@@ -1,10 +1,10 @@
 import logging
-from bluesky.standard_config import *  # gs, etc.
+from bluesky.global_state import gs
 from bluesky.scientific_callbacks import plot_peak_stats
 from bluesky.plans import  *
-from bluesky import qt_kicker
+from bluesky.qt_kicker import install_qt_kicker
 
-qt_kicker.install_qt_kicker()
+install_qt_kicker()
 RE=gs.RE
 RE.md['beamline_id'] = 'IXS'
 RE.md['owner'] = 'xf10id'
@@ -38,6 +38,15 @@ cb = logbook_cb_factory(configured_logbook_func)
 RE.subscribe('start', cb)
 
 import ophyd
-from ophyd.commands import (wh_pos, log_pos, mov, movr, setup_ophyd)
+from ophyd.commands import (wh_pos, log_pos, mov, movr, setup_ophyd,
+                            get_all_positioners)
 
 setup_ophyd()
+
+
+def relabel_motors():
+    mtrs = get_all_positioners()
+    for mtr in mtrs:
+        attr = getattr(mtr, 'user_readback')
+        attr.name = mtr.name
+
