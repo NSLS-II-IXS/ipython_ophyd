@@ -8,7 +8,9 @@ from bluesky.global_state import gs
 olog_cb = OlogCallback('Data Acquisition')
 gs.RE.subscribe('start', olog_cb)
 
-from bluesky.scientific_callbacks import plot_peak_stats
+gs.DETS.append(det4)
+
+#from bluesky.scientific_callbacks import plot_peak_stats
 
 from bluesky.plans import *
 
